@@ -3,7 +3,7 @@ Dashup Module Phone
 [![Latest Github release](https://img.shields.io/github/release/dashup/module-phone.svg)](https://github.com/dashup/module-phone/releases/latest)
 =====
 
-A connect interface for phone on [dashup](https://dashup.io).
+A connect interface for phone on [dashup](https://dashup.io) powered by [enfonica](https://enfonica.com/).
 
 ## Contents
 * [Get Started](#get-started)
@@ -17,6 +17,9 @@ This phone connector adds sms actions to Dashup flows:
 {
   "url" : "https://dashup.io",
   "key" : "[dashup module key here]",
+
+  "apiUrl"   : "[enfonica URL here]",
+  "apiToken" : "[enfonica token here]"
 }
 ```
 

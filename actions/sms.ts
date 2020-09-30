@@ -74,6 +74,6 @@ export default class SMSAction extends Action {
    * @param data 
    */
   async run({ req, dashup }, action, data) {
-    
+    // @todo run txt
   }
 }

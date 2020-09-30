@@ -42,9 +42,9 @@
        */
       onChange(e) {
         // set element
-        this.props.set('config', {
-          to   : this.refs.to.value,
-          body : this.refs.body.value,
+        this.props.set({
+          to   : this.$('[ref="to"]').value,
+          body : this.$('[ref="body"]').value,
         });
       }
     }
