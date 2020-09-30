@@ -1,0 +1,52 @@
+<action-sms-config>
+  <div class={ `card card-flowing card-${props.getAction(props.action).color || 'primary'} mb-3` }>
+    <div class="card-header drag">
+      <div class="card-icon">
+        <i class={ props.getAction(props.action).icon } />
+      </div>
+
+      { props.getAction(props.action).title }
+
+      <a target="_blank" href="https://enfonica.com" class="text-muted ml-auto">
+        Powered by enfonica
+      </a> 
+
+    </div>
+    <div class="card-body">
+      <div class="mb-3">
+        <label class="form-label">
+          SMS Recipient(s)
+        </label>
+        <input class="form-control" ref="to" value={ props.action.to || '' } type="text" onchange={ (e) => onChange(e) } />
+        <small>Seperate with <code>,</code></small>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">
+          SMS Body
+        </label>
+        <input class="form-control" ref="body" value={ props.action.body || '' } type="text" onchange={ (e) => onChange(e) } />
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * export flow action email
+     */
+    export default class ActionSMSConfig {
+
+      /**
+       * on change timing
+       *
+       * @param {Event} e
+       */
+      onChange(e) {
+        // set element
+        this.props.set('config', {
+          to   : this.refs.to.value,
+          body : this.refs.body.value,
+        });
+      }
+    }
+  </script>
+</action-sms-config>
