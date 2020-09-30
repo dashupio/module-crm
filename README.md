@@ -1,9 +1,9 @@
-Dashup Module Facebook
+Dashup Module Phone
 &middot;
-[![Latest Github release](https://img.shields.io/github/release/dashup/module-facebook.svg)](https://github.com/dashup/module-facebook/releases/latest)
+[![Latest Github release](https://img.shields.io/github/release/dashup/module-phone.svg)](https://github.com/dashup/module-phone/releases/latest)
 =====
 
-A connect interface for facebook on [dashup](https://dashup.io).
+A connect interface for phone on [dashup](https://dashup.io).
 
 ## Contents
 * [Get Started](#get-started)
@@ -11,7 +11,7 @@ A connect interface for facebook on [dashup](https://dashup.io).
 
 ## Get Started
 
-This facebook connector adds facebook login to Dashup frontend modules:
+This phone connector adds sms actions to Dashup flows:
 
 ```json
 {
@@ -26,5 +26,5 @@ To start the connection to dashup:
 
 ## Deployment
 
-1. `docker build -t dashup/module-facebook .`
-2. `docker run -d -v /path/to/.dashup.json:/usr/src/module/.dashup.json dashup/module-facebook`
+1. `docker build -t dashup/module-phone .`
+2. `docker run -d -v /path/to/.dashup.json:/usr/src/module/.dashup.json dashup/module-phone`
