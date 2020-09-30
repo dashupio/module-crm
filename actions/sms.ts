@@ -63,7 +63,7 @@ export default class SMSAction extends Action {
    */
   get description() {
     // return description string
-    return 'SMS Actionor';
+    return 'SMS Action';
   }
 
   /**
