@@ -1,11 +1,11 @@
 
 // import connect interface
-import { Action } from '@dashup/module';
+import { Struct } from '@dashup/module';
 
 /**
  * build address helper
  */
-export default class SMSAction extends Action {
+export default class SMSAction extends Struct {
   /**
    * construct sms connector
    *

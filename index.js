@@ -19,20 +19,13 @@ class PhoneModule extends Module {
   }
   
   /**
-   * Register all action interfaces here
-   * 
-   * ```
-   * // register connect class
-   * register(Action);
-   * ```
-   * 
-   * Class `Action` should extend `require('@dashup/module').Action`
-   * 
-   * @param {Function} register 
+   * register functions
+   *
+   * @param {*} fn 
    */
-  actions(register) {
+  register(fn) {
     // register sms action
-    register(SMSAction);
+    fn('action', SMSAction);
   }
 
   /**
