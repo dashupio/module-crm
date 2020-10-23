@@ -18,6 +18,7 @@
     "@dashup/module": "file:../../../modules/dashup_module",
     "axios": "^0.20.0",
     "babel-plugin-add-module-exports": "^1.0.4",
+    "handlebars": "^4.7.6",
     "node-fetch": "^2.6.1"
   }
 }

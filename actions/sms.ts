@@ -1,19 +1,22 @@
 
 // import connect interface
+import handlebars from 'handlebars';
 import { Struct } from '@dashup/module';
 
 /**
  * build address helper
  */
 export default class SMSAction extends Struct {
+
   /**
-   * construct sms connector
-   *
-   * @param args 
+   * construct
    */
   constructor(...args) {
-    // run super
+    // return
     super(...args);
+
+    // run listen
+    this.runAction = this.runAction.bind(this);
   }
 
   /**
@@ -51,6 +54,16 @@ export default class SMSAction extends Struct {
   }
 
   /**
+   * returns object of views
+   */
+  get actions() {
+    // return object of views
+    return {
+      run : this.runAction,
+    };
+  }
+
+  /**
    * returns category list for connect
    */
   get categories() {
@@ -73,7 +86,43 @@ export default class SMSAction extends Struct {
    * @param action 
    * @param data 
    */
-  async run({ req, dashup }, action, data) {
-    // @todo run txt
+  async runAction(opts, action, data) {
+    // send
+    if (!action.to) return;
+
+    // template
+    const toTemplate = handlebars.compile(action.to);
+
+    // replace with data
+    const to = toTemplate(data || {});
+
+    // template
+    const fromTemplate = handlebars.compile(action.from);
+
+    // replace with data
+    const from = fromTemplate(data || {});
+
+    // template
+    const bodyTemplate = handlebars.compile(action.body);
+
+    // replace with data
+    const body = bodyTemplate(data || {});
+
+    // get to
+    const actualTo = to.split(',').map((item) => item && item.trim().length ? item.trim() : null).filter((f) => f);
+
+    // check to
+    if (!actualTo.length) return;
+
+    // send
+    actualTo.forEach((subTo) => {
+      // sub to
+      this.dashup.send(subTo, from, body);
+    });
+
+    // return data
+    return {
+      data,
+    };
   }
 }

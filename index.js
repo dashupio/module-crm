@@ -37,13 +37,13 @@ class PhoneModule extends Module {
    */
   send(to, from, body) {
     // await res
-    return axios.post(`${this.dashup.config.smsUrl}messages`, {
+    return axios.post(`${this.config.apiUrl}messages`, {
       to,
       from,
       body,
     }, {
       headers : {
-        Authorization : `Bearer ${this.dashup.config.token}`,
+        Authorization : `Bearer ${this.config.apiToken}`,
       }
     });
   }
