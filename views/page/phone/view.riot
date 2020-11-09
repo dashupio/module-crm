@@ -1,0 +1,1050 @@
+<page-phone-view>
+  <div class="d-flex flex-column flex-1">
+    <div class="row g-0 flex-1">
+
+      <!-- CHAT LIST -->
+      <div class="col chat-column mb-4 mb-lg-0">
+        <div class="card mb-3">
+          <div class="card-body">
+            <h4>
+              Stats
+            </h4>
+
+            <!-- total calls -->
+            <label class="form-label d-flex">
+              <b class="mr-2">{ state.stats.calls.total }</b>Calls (24h)
+              <span class="ml-auto">
+                <b class="mr-2">{ state.stats.calls.avg }</b>Avg
+              </span>
+            </label>
+            <div class="progress bg-primary mb-2">
+              <div class="progress-bar bg-success" role="progressbar" aria-valuenow={ getPercent(state.stats.calls.total, state.stats.calls.avg) } style={ `width:${getPercent(state.stats.calls.total, state.stats.calls.avg)}%` } aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+            <!-- / total calls -->
+
+            <!-- total calls -->
+            <label class="form-label d-flex">
+              <b class="mr-2">{ new Date(state.stats.duration.total).toISOString().substr(11, 8) }</b>Duration (24h)
+              <span class="ml-auto">
+                <b class="mr-2">{ new Date(state.stats.duration.avg).toISOString().substr(11, 8) }</b>Avg
+              </span>
+            </label>
+            <div class="progress bg-primary">
+              <div class="progress-bar bg-success" role="progressbar" aria-valuenow={ getPercent(state.stats.duration.total, state.stats.duration.avg) } style={ `width:${getPercent(state.stats.duration.total, state.stats.duration.avg)}%` } aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+            <!-- / total calls -->
+            
+          </div>
+        </div>
+        <div class="column-body">
+          <div class="column-body-inner">
+            <div class="card">
+              <div class="card-body task-container">
+                <page-phone-task each={ (item, i) in state.items } item={ item } page={ props.page } form-fields={ props.context.fields } add-user={ props.adduser } add-tag={ props.addTag } on-item={ (e) => props.onItem(e, item) } on-click={ (e) => state.item && state.item.get('_id') === item.get('_id') ? props.onItem(e, item) : onClick(e, item) } class={ classes({ 'd-none' : !isVisible(item), 'active' : state.item && state.item.get('_id') === item.get('_id') }) } />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- / CHAT LIST -->
+
+      <!-- CHAT BODY -->
+      <div class="col ml-3 d-flex flex-column" if={ loading('item') }>
+        <div class="mx-auto my-5">
+          <i class="fa fa-spinner fa-spin h1" />
+        </div>
+      </div>
+      <!-- / CHAT BODY -->
+
+      <!-- CHAT MAIN -->
+      <div class="col ml-3 d-flex flex-column" if={ state.item && !loading('item') }>
+        <div class="row">
+          <div class="col-lg-5">
+            <div class="card mb-3">
+              <div class="card-body">
+                <hbs template={ props.page.get('data.view') || props.page.get('data.display') || '' } data={ state.item ? state.item.get() : {} } />
+              </div>
+            </div>
+            <div class="card" if={ getForm() }>
+              <div class="card-header pt-3 pb-0 d-flex justify-content-end" if={ props.page.get('data.forms.1') }>
+                <div class="btn-group dropdown">
+                  <button class="btn btn-primary dropdown-toggle" type="button" id="dropdown-add" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <i class="fa fa-plus mr-2" />
+                    { getForm().get('name') }
+                  </button>
+
+                  <div class="dropdown-menu" aria-labelledby="dropdown-add">
+                    <button each={ (form, i) in props.page.get('data.forms') } class="dropdown-item" onclick={ (e) => onForm(e, form) }>
+                      { props.dashup.page(form).get('name') }
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card-body">
+                <dashup-view ref={ ref('form') } view="form" type="page" struct="form" item={ state.item } preview={ true } page={ getForm() } on-data={ (k, v) => onData(k, v) } on-submit={ (e, d) => onSubmit(e, d) } { ...getProps(true) } />
+              </div>
+
+              <div class="card-footer text-right pt-0 pb-3">
+                <button if={ !loading('submit') } class="btn btn-success" onclick={ (e) => onSubmit(e) }>
+                  Update
+                </button>
+                <button if={ loading('submit') } class="btn btn-success disabled">
+                  Updating...
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-7">
+            <div class="mb-3 d-flex justify-content-end">
+              <button class={ `btn btn-primary ml-2${state.tab === 'note' ? ' active' : ''}` } onclick={ (e) => onTab(e, 'note') }>
+                <i class="fa fa-file mr-2" />
+                Note
+              </button>
+              <button class={ `btn btn-primary ml-2${state.tab === 'sms' ? ' active' : ''}` } onclick={ (e) => onTab(e, 'sms') }>
+                <i class="fa fa-comments mr-2" />
+                SMS
+              </button>
+              <button class={ `btn btn-primary ml-2${props.call ? ' active' : ''}` } onclick={ (e) => onCall(e) }>
+                <i class="fa fa-phone mr-2" />
+                Call
+              </button>
+            </div>
+
+            <div if={ state.tab === 'sms' } class="mb-3 card">
+              <div class="card-body">
+                <label class="form-label">
+                  SMS Message
+                </label>
+                <input class="form-control" type="text" id="sms" />
+              </div>
+              <div class="card-footer text-right pt-0">
+                <button class={ `btn btn-success${loading('sms') ? ' disabled' : ''}` } onclick={ (e) => onSMS(e) }>
+                  { loading('sms') ? 'Sending...' : 'Send' }
+                </button>
+              </div>
+            </div>
+
+            <div if={ state.tab === 'note' } class="mb-3 card">
+              <div class="card-body">
+                <label class="form-label">
+                  Note
+                </label>
+                <textarea class="form-control" type="text" id="note" />
+              </div>
+              <div class="card-footer text-right pt-0">
+                <button class={ `btn btn-success${loading('note') ? ' disabled' : ''}` } onclick={ (e) => onNote(e) }>
+                  { loading('note') ? 'Submitting...' : 'Submit' }
+                </button>
+              </div>
+            </div>
+
+            <page-phone-event each={ (event, i) in state.events } event={ event } field={ (name) => getField(name) } { ...getProps() } />
+          </div>
+        </div>
+      </div>
+      <!-- / CHAT MAIN -->
+    </div>
+  </div>
+
+  <script>
+    // perfect
+    import moment from 'moment';
+    import PerfectScrollbar from 'perfect-scrollbar';
+    import { Device } from 'twilio-client';
+
+    // chat page task
+    import pagePhoneTask from './task.riot';
+    import pagePhoneEvent from './event.riot';
+
+    // export default
+    export default class PagePhoneView {
+
+
+      // ////////////////////////////////////////////////////////////////////////////
+      //
+      // RIOT METHODS
+      //
+      // ////////////////////////////////////////////////////////////////////////////
+
+      /**
+       * local components
+       */
+      static get components() {
+        // return components
+        return {
+          pagePhoneTask,
+          pagePhoneEvent,
+        };
+      }
+
+      /**
+       * on before mount
+       */
+      onBeforeMount(...args) {
+        // check frontend
+        if (typeof window === 'undefined') return;
+
+        // safe update
+        this.safeUpdate = () => {
+          this.update();
+        };
+
+        // set state
+        this.state.stats = {
+          calls : {
+            avg   : 0,
+            total : 0,
+          },
+          duration : {
+            avg   : 0,
+            total : 0,
+          },
+        };
+
+        // bind
+        this.init     = this.init.bind(this);
+        this.onClick  = this.onClick.bind(this);
+        this.getStats = this.getStats.bind(this);
+
+        // listeners
+        this.props.page.on('reload', this.safeUpdate);
+        this.props.page.on('data.view', this.safeUpdate);
+        this.props.page.on('data.forms', this.safeUpdate);
+        this.props.page.on('data.display', this.safeUpdate);
+      }
+      
+      /**
+       * on mounted
+       *
+       * @param {Array} args
+       */
+      onMounted(...args) {
+        // check window
+        if (typeof window === 'undefined') return;
+        
+        // init
+        this.init();
+      }
+      
+      /**
+       * on mounted
+       *
+       * @param {Array} args
+       */
+      onUpdated(...args) {
+        // check window
+        if (typeof window === 'undefined') return;
+        
+        // set ps
+        if (!this.$('.task-container.ps') && this.$('.task-container')) {
+          // add bar
+          this.ps = new PerfectScrollbar(this.$('.task-container'), {
+            suppressScrollX : true,
+          });
+        }
+      }
+
+      /**
+       * on before mount
+       */
+      onBeforeUnmount(...args) {
+        // check frontend
+        if (typeof window === 'undefined') return;
+
+        // listeners
+        this.props.page.removeListener('reload', this.safeUpdate);
+        this.props.page.removeListener('data.view', this.safeUpdate);
+        this.props.page.removeListener('data.forms', this.safeUpdate);
+        this.props.page.removeListener('data.display', this.safeUpdate);
+
+        // client
+        if (this.statusInterval) {
+          clearInterval(this.statusInterval);
+        }
+        if (this.callInterval) {
+          clearInterval(this.callInterval);
+        }
+        if (this.statsInterval) {
+          clearInterval(this.statsInterval);
+        }
+
+        // disconnect
+        if (this.props.connection) {
+          this.props.connection.disconnect();
+        }
+
+        // items
+        if (this.state.items && this.state.items.removeListener) {
+          // safe update
+          this.state.items.removeListener('update', this.safeUpdate);
+        }
+        if (this.state.events && this.state.events.removeListener) {
+          // safe update
+          this.state.events.removeListener('update', this.safeUpdate);
+        }
+      }
+
+
+      // ////////////////////////////////////////////////////////////////////////////
+      //
+      // GET METHODS
+      //
+      // ////////////////////////////////////////////////////////////////////////////
+
+      /**
+       * get props
+       */
+      getProps(noPage) {
+        // clone
+        const newProps = { ...(this.props) };
+
+        // delete
+        delete newProps.ref;
+        delete newProps.type;
+        delete newProps.item;
+        delete newProps.view;
+        delete newProps.class;
+        delete newProps.struct;
+
+        // delete page
+        if (noPage) {
+          delete newProps.page;
+        }
+
+        // return
+        return newProps;
+      }
+
+      /**
+       * get form
+       */
+      getForm() {
+        // check
+        if (!this.props.page.get('data.forms')) return;
+
+        // get form
+        return this.props.dashup.page(this.state.form || this.props.page.get('data.forms')[0]);
+      }
+      
+      /**
+       * is filter me
+       */
+      isFilter(type, val) {
+        // check me
+        return ((this.props.page.get('user.filter') || {})[type] || false) === val;
+      }
+
+      /**
+       * check visible
+       */
+      isVisible(task) {
+        // tags
+        const tags = this.props.search && this.props.search.length ? this.props.search.toLowerCase().split(' ') : [];
+
+        // check filter
+        if (this.isFilter('me', true)) {
+          // check vals
+          const userField = this.props.context.fields.find((f) => f.uuid === this.props.page.get('data.user'));
+
+          // get vals
+          let vals = task.get(userField ? userField.name || userField.uuid : 'null') || [];
+
+          // vals
+          if (vals && !Array.isArray(vals)) vals = [vals];
+
+          // only me
+          if (!vals.find((val) => {
+            // user
+            return val.user === this.props.me.get('id');
+          })) return false;
+        }
+
+        // check tags
+        if ((this.props.page.get('user.filter.tags') || []).length) {
+          // check vals
+          const tagField = this.props.context.fields.find((f) => f.uuid === this.props.page.get('data.tag'));
+
+          // check filter
+          if (this.props.page.get('user.filter.tags').find((tag) => {
+            // check tag exists on task
+            let val = task.get(tagField ? tagField.name || tagField.uuid : 'null') || [];
+
+            // set value
+            if (typeof val === 'string') val = [val];
+
+            // check tag
+            return !val.includes(tag);
+          })) return false;
+        }
+
+        // filter
+        if (tags.length) {
+          // search item
+          const searchable = JSON.stringify(task.get()).toLowerCase();
+
+          // search JSON
+          if (tags.find((tag) => {
+            // check
+            return !searchable.includes(tag);
+          })) return false;
+        }
+
+        // return true
+        return true;
+      }
+
+
+      // ////////////////////////////////////////////////////////////////////////////
+      //
+      // EVENT METHODS
+      //
+      // ////////////////////////////////////////////////////////////////////////////
+
+      /**
+       * on tab
+       */
+      onTab(e, tab) {
+        // prevent default
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+
+        // update tab
+        this.update({
+          tab : this.state.tab === tab ? null : tab,
+        });
+      }
+
+      /**
+       * on send
+       */
+      async onSMS(e) {
+        // prevent default
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+
+        // check sms
+        const body = this.$('#sms').value;
+        this.$('#sms').value = '';
+
+        // loading
+        this.loading('sms', true);
+
+        // get number
+        const numberField = this.props.context.fields.find((f) => f.uuid === this.props.page.get('data.field.phone'));
+
+        // check number
+        if (!numberField) return;
+
+        // get number
+        const number = this.state.item.get(numberField.name || numberField.uuid);
+
+        // send from/to
+        await this.props.page.action('send', {
+          body,
+          to   : number,
+          from : this.props.number,
+        });
+
+        // add event
+        await this.addEvent({
+          body,
+          type  : 'sms:outbound',
+          item  : this.state.item.get('_id'),
+          time  : new Date(),
+          title : `Sent SMS To ${number}`,
+        });
+
+        // loading
+        this.loading('sms', false);
+      }
+
+      /**
+       * on send
+       */
+      async onNote(e) {
+        // prevent default
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+
+        // check sms
+        const body = this.$('#note').value;
+        this.$('#note').value = '';
+
+        // loading
+        this.loading('note', true);
+
+        // add event
+        await this.addEvent({
+          body,
+          type  : 'note',
+          item  : this.state.item.get('_id'),
+          time  : new Date(),
+          title : 'Added Note',
+        });
+
+        // loading
+        this.loading('note', false);
+      }
+
+      /**
+       * on click
+       */
+      async onClick(e, item) {
+        // prevent default
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+
+        // itemField
+        const itemField = this.getField('item');
+  
+        // loading chat
+        this.loading('item', true);
+
+        // items
+        if (this.state.events && this.state.events.removeListener) {
+          // safe update
+          this.state.events.removeListener('update', this.safeUpdate);
+        }
+
+        // get model
+        let events = [];
+        const model = this.props.page.get('data.event.model');
+
+        // get model
+        if (model && itemField) {
+          // load events
+          const modelPage = this.props.dashup.page(model);
+
+          // load events
+          events = await modelPage.where({
+            [itemField.name || itemField.uuid] : item.get('_id'),
+          }).sort('created_at', -1).limit(25).listen();
+
+          // on update
+          events.on('update', this.safeUpdate);
+        }
+
+        // update state
+        this.update({
+          item,
+          events,
+        });
+        this.loading('item', false);
+      }
+
+      /**
+       * on call
+       */
+      async onCall(e, incoming) {
+        // prevent default
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+
+        // check state
+        if (!incoming && !this.state.item) return;
+        if (!this.props.number) {
+          // error
+          return eden.alert.error('Please purchase or select a number to initalize calls');
+        }
+
+        // get number
+        const numberField = this.props.context.fields.find((f) => f.uuid === this.props.page.get('data.field.phone'));
+
+        // check number
+        if (!numberField) return;
+        
+        // set query
+        let query = this.props.dashup.page(this.props.page.get('data.model'));
+
+        // check items
+        if (this.props.page.get('data.forms')) {
+          // loop forms
+          query = query.in('_meta.form', this.props.page.get('data.forms'));
+        }
+
+        // find or create number
+        const item = incoming ? (await query.where({
+          [numberField.name || numberField.uuid] : incoming,
+        }).findOne() || await this.props.dashup.page(model).create({
+          [numberField.name || numberField.uuid] : incoming,
+        })) : this.state.item;
+
+        // update item
+        if (!this.state.item || incoming) this.onClick(null, item);
+
+        // get number
+        const number = item.get(numberField.name || numberField.uuid);
+
+        // update call
+        this.props.props({
+          call : {
+            to     : number,
+            from   : this.props.number,
+            start  : new Date(),
+            muted  : false,
+            status : 'connecting',
+          },
+          connection : this.props.connection || this.device.connect({
+            to       : number,
+            item     : item.get('_id'),
+            from     : this.props.number,
+            page     : this.props.page.get('_id'),
+            agent    : (eden ? eden.user.get('_id') : 'Anonymous'),
+            member   : this.props.dashup.get('_meta.member'),
+            dashup   : this.props.dashup.get('_id'),
+            location : this.props.dashup.get('_id'),
+          }),
+        });
+
+        // call
+        const actualCall = await this.addEvent({
+          time  : new Date(),
+          type  : `call:${incoming ? 'inbound' : 'outbound'}`,
+          item  : item.get('_id'),
+          title : `${incoming ? 'Call From' : 'Called'} ${number}`,
+        });
+
+        // interval
+        this.callInterval = setInterval(() => {
+          // set status
+          if (this.props.call && this.props.call.status !== this.props.connection.status()) {
+            // set status
+            this.props.props({
+              call : {
+                ...(this.props.call),
+
+                status : this.props.connection.status(),
+              },
+            });
+          }
+        }, 1000);
+
+        // on disconnect
+        this.props.connection.on('disconnect', () => {
+          // call null
+          this.props.props({
+            call : null,
+          });
+
+          // time field
+          const timeField = this.getField('time');
+
+          // set and save
+          actualCall.set('duration', (new Date().getTime() - new Date(actualCall.get(timeField.name || timeField.uuid)).getTime()));
+          actualCall.save();
+          
+          // clear interval
+          if (this.callInterval) clearInterval(this.callInterval);
+        });
+
+        // on disconnect
+        this.props.connection.on('mute', (muted) => {
+          // call null
+          this.props.props({
+            call : {
+              ...(this.props.call),
+
+              muted,
+            },
+          });
+        });
+      }
+
+      /**
+       * on data
+       */
+      onData(field, value) {
+        // set value
+        this.state.item.set(field.name || field.uuid, value);
+
+        // update
+        this.update();
+      }
+
+      /**
+       * on form
+       */
+      onForm(e, form) {
+        // prevent
+        e.preventDefault();
+        e.stopPropagation();
+
+        // loading
+        this.loading('form', true);
+
+        // update
+        this.update({
+          form,
+        });
+
+        // loading
+        setTimeout(() => {
+          this.loading('form', false);
+        }, 10);
+      }
+
+      /**
+       * on submit
+       *
+       * @param {Event} e
+       */
+      async onSubmit(e, data) {
+        // prevent
+        e.preventDefault();
+        e.stopPropagation();
+
+        // loading
+        this.loading('submit', true);
+
+        // submit form
+        if (!data) data = this.refs.form.data();
+
+        // submit form
+        const item = await this.props.dashup.action({
+          type   : 'page',
+          page   : this.props.page.get('data.forms')[0],
+          form   : this.props.page.get('data.forms')[0],
+          model  : this.props.page.get('data.model'),
+          struct : 'form',
+        }, 'form.submit', data);
+        
+        // loading
+        this.loading('submit', false);
+      }
+
+      /**
+       * add event
+       */
+      async addEvent({ _id, title, type, item, body, time, duration }) {
+        // get fields
+        const fields = this.getFields();
+
+        // get fields
+        const typeField = this.getField('type', fields) || {};
+        const itemField = this.getField('item', fields) || {};
+        const bodyField = this.getField('body', fields) || {};
+        const timeField = this.getField('time', fields) || {};
+        const userField = this.getField('user', fields) || {};
+        const titleField = this.getField('title', fields) || {};
+        const durationField = this.getField('duration', fields) || {};
+
+        // create event
+        const newEvent = await this.props.dashup.action({
+          type   : 'page',
+          page   : this.props.page.get('data.event.form'),
+          form   : this.props.page.get('data.event.form'),
+          model  : this.props.page.get('data.event.model'),
+          struct : 'form',
+        }, 'form.submit', {
+          _id,
+
+          [itemField.name || itemField.uuid] : item,
+          [userField.name || userField.uuid] : this.props.dashup.get('_meta.member'),
+          [typeField.name || typeField.uuid] : type,
+          [bodyField.name || bodyField.uuid] : body,
+          [timeField.name || timeField.uuid] : time,
+          [titleField.name || titleField.uuid] : title,
+          [durationField.name || durationField.uuid] : duration,
+        });
+
+        // event
+        if (newEvent && typeof newEvent !== this.props.dashup.Model) {
+          // return model
+          return new this.props.dashup.Model(newEvent, this.props.dashup);
+        }
+
+        // return event
+        return newEvent;
+      }
+
+      /**
+       * get field
+       */
+      getField(name, fields) {
+        // return value
+        return [...(fields || this.getFields())].find((field) => {
+          // return fields
+          return field.uuid === this.props.page.get(`data.event.${name}`);
+        });
+      }
+
+      /**
+       * get fields
+       */
+      getFields() {
+        // reduce
+        this.state.fields = this.state.fields || [this.props.page.get('data.event.form')].filter((i) => i).reduce((accum, id) => {
+          // get page
+          const page = this.props.dashup.page(id);
+
+          // check page
+          if (!page || !page.get('data.fields')) return accum;
+
+          // loop fields
+          accum.push(...page.get('data.fields').map((f) => {
+            // return field
+            return {
+              ...f,
+
+              form : page.get('_id'),
+            };
+          }));
+
+          // return accum
+          return accum;
+        }, []);
+
+        // return fields
+        return this.state.fields;
+      }
+
+      /**
+       * get stats
+       */
+      async getStats() {
+        // get event model
+        const eventModel = this.props.page.get('data.event.model');
+
+        // get fields
+        const fields = this.getFields();
+
+        // event model
+        if (!eventModel) return;
+
+        // yesterday
+        const yesterday = moment().subtract(1, 'day').toDate();
+
+        // fields
+        const typeField = this.getField('type', fields);
+        const timeField = this.getField('time', fields);
+        const userField = this.getField('user', fields);
+        const durationField = this.getField('duration', fields);
+
+        // page
+        const eventPage = this.props.dashup.page(eventModel);
+
+        // update
+        this.update({
+          stats : {
+            calls : {
+              avg : await eventPage.gt(timeField.name || timeField.uuid, yesterday).or({
+                [typeField.name || typeField.uuid] : 'call:outbound',
+              }, {
+                [typeField.name || typeField.uuid] : 'call:inbound',
+              }).avg(null, userField.name || userField.uuid),
+              total : await eventPage.gt(timeField.name || timeField.uuid, yesterday).where({
+                [userField.name || userField.uuid] : this.props.dashup.get('_meta.member'),
+              }).or({
+                [typeField.name || typeField.uuid] : 'call:outbound',
+              }, {
+                [typeField.name || typeField.uuid] : 'call:inbound',
+              }).count(),
+            },
+            duration : {
+              avg : await eventPage.gt(timeField.name || timeField.uuid, yesterday)
+                .gt(durationField.name || durationField.uuid, 0).or({
+                [typeField.name || typeField.uuid] : 'call:outbound',
+              }, {
+                [typeField.name || typeField.uuid] : 'call:inbound',
+              }).avg(durationField.name || durationField.uuid, userField.name || userField.uuid),
+              total : await eventPage.gt(timeField.name || timeField.uuid, yesterday).where({
+                [userField.name || userField.uuid] : this.props.dashup.get('_meta.member'),
+              }).gt(durationField.name || durationField.uuid, 0).or({
+                [typeField.name || typeField.uuid] : 'call:outbound',
+              }, {
+                [typeField.name || typeField.uuid] : 'call:inbound',
+              }).sum(durationField.name || durationField.uuid),
+            }
+          },
+        });
+      }
+
+      /**
+       * get difference
+       */
+      getPercent(a, b) {
+        // value
+        const total = (a / b) * 100;
+
+        // total
+        if (total > 100) return '100.00';
+
+        // return total
+        return total.toFixed(2);
+      }
+
+
+      // ////////////////////////////////////////////////////////////////////////////
+      //
+      // Init Methods
+      //
+      // ////////////////////////////////////////////////////////////////////////////
+  
+      /**
+       * init
+       */
+      async init() {
+        // items
+        if (this.state.items && this.state.items.removeListener) {
+          // safe update
+          this.state.items.removeListener('update', this.safeUpdate);
+        }
+
+        // get model
+        let items = [];
+        const model = this.props.page.get('data.model');
+
+        // query by
+        if (model) {
+          // set query
+          let query = this.props.dashup.page(model).sort('updated_at', -1);
+
+          // check items
+          if (this.props.page.get('data.forms')) {
+            // loop forms
+            query = query.in('_meta.form', this.props.page.get('data.forms'));
+          }
+
+          // load filter
+          let filter = null;
+
+          // try/catch
+          try {
+            filter = JSON.parse(this.props.page.get('data.filter'));
+          } catch (e) {}
+  
+          // add initial where
+          if (filter) {
+            // add wheres
+            filter.forEach((where) => {
+              // where
+              query = query.where(where);
+            });
+          }
+
+          // check where
+          (this.props.page.get('user.where') || []).forEach((where) => {
+            // add query
+            query = query[where[0]](where[1], where[2]);
+          });
+
+          // listen
+          items = await query.listen();
+        }
+
+        // update
+        const { token } = await this.props.page.action('auth');
+
+        // setup device
+        this.device = new Device();
+
+        // setup
+        this.device.setup(token, {
+          debug : true,
+        });
+
+        // setup
+        this.device.incoming((conn) => {
+          // update call
+          this.props.props({
+            call : {
+              to     : conn.parameters.From,
+              from   : conn.parameters.To,
+              type   : 'incoming',
+              start  : new Date(),
+              muted  : false,
+              status : 'calling',
+            },
+            connection : conn,
+          });
+        });
+
+        // interval
+        this.props.props({
+          accept : (number) => {
+            // on call
+            this.onCall(null, number);
+          },
+          device : this.device,
+        });
+        this.statusInterval = setInterval(() => {
+          // set status
+          if (this.props.status !== this.device.status()) {
+            // set status
+            this.props.props({
+              status : this.device.status(),
+            });
+          }
+        }, 1000);
+
+        // create stats interval
+        this.statsInterval = setInterval(this.getStats, 5 * 1000);
+        this.getStats();
+
+        // update
+        this.update({
+          items,
+        });
+
+        // safe update
+        if (items && items.on) items.on('update', this.safeUpdate);
+      }
+
+
+      // ////////////////////////////////////////////////////////////////////////////
+      //
+      // MISC METHODS
+      //
+      // ////////////////////////////////////////////////////////////////////////////
+
+      /**
+       * ref
+       */
+      ref(name) {
+        // set refs
+        if (!this.refs) this.refs = {};
+
+        // return ref function
+        return (that) => {
+          // set ref
+          this.refs[name] = that;
+        };
+      }
+
+      /**
+       * classes
+       */
+      classes(obj) {
+        // return object
+        return Object.keys(obj).filter((k) => obj[k]).join(' ');
+      }
+
+      /**
+       * set loading
+       */
+      loading(type, way) {
+        // set loading
+        if (!this.__loading) this.__loading = new Map();
+
+        // check loading
+        if (!type) return !!Array.from(this.__loading.values()).find((v) => v);
+        if (typeof way === 'undefined') return !!this.__loading.get(type);
+
+        // set loading
+        this.__loading.set(type, way);
+        this.update();
+      }
+    }
+  </script>
+</page-phone-view>

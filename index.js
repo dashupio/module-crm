@@ -4,6 +4,7 @@ const { Module } = require('@dashup/module');
 
 // import base
 const SMSAction = require('./actions/sms');
+const PhonePage = require('./pages/phone');
 
 /**
  * export module
@@ -25,6 +26,7 @@ class PhoneModule extends Module {
    */
   register(fn) {
     // register sms action
+    fn('page', PhonePage);
     fn('action', SMSAction);
   }
 

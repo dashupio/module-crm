@@ -1,0 +1,202 @@
+<page-phone-menu>
+
+  <button if={ !props.call && state.numbers && state.numbers.length === 1 && props.number } class="btn btn-link mr-2">
+    { props.number }
+  </button>
+
+  <div if={ !props.call && state.numbers && state.numbers.length > 1 } class="btn-group dropdown mr-2">
+    <button class={ `btn btn-${props.number ? 'light' : 'info'}` } id="dropdown-number" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+      { props.number || 'Select Number' }
+    </button>
+
+    <div class="dropdown-menu" aria-labelledby="dropdown-number">
+      <button each={ (number, i) in state.numbers } class="dropdown-item" onclick={ (e) => onNumber(e, number.number) }>
+        { number.number }
+      </button>
+    </div>
+  </div>
+
+  <button if={ props.number && !props.call } class={ `btn mr-2 btn-${status[props.status || 'connecting']}` }>
+    <i class="fa fa-plug mr-2" />
+    { ucfirst(props.status || 'connecting') }
+  </button>
+
+  <button if={ props.call } class="btn btn-link mr-2">
+    { new Date((new Date().getTime() - props.call.start.getTime())).toISOString().substr(11, 8) }
+  </button>
+
+  <div if={ props.call } class="btn-group mr-1">
+    <button class={ `btn btn-${status[props.call.status || 'connecting']}` }>
+      { ucfirst(props.call.status) }
+    </button>
+  </div>
+
+  <button if={ props.call && props.call.type === 'incoming' } class="btn btn-success mr-2" onclick={ (e) => onAccept(e) }>
+    <i class={ `fa fa-phone mr-2` } />
+    Accept
+  </button>
+  <button if={ props.call && props.call.type === 'incoming' } class="btn btn-danger mr-2" onclick={ (e) => onReject(e) }>
+    <i class={ `fa fa-times mr-2` } />
+    Reject
+  </button>
+
+  <button if={ props.call && !props.call.type } class={ `btn btn-${props.call.muted ? 'danger' : 'success'} mr-1` } onclick={ (e) => onMute(e) }>
+    <i class={ `fa fa-${props.call.muted ? 'volume-mute' : 'volume'}` } />
+  </button>
+  <button if={ props.call && !props.call.type } class="btn btn-danger mr-2" onclick={ (e) => onDisconnect(e) }>
+    <i class={ `fa fa-times` } />
+  </button>
+
+  <button if={ props.dashup.can(props.page, 'submit') && !props.page.get('data.forms.1') } class="btn btn-success" type="button" onclick={ (e) => props.onItem(e) }>
+    <i class="fa fa-plus mr-2" />
+    Create
+  </button>
+  <div if={ props.dashup.can(props.page, 'submit') && props.page.get('data.forms.1') } class="btn-group dropdown">
+    <button class="btn btn-success dropdown-toggle" type="button" id="dropdown-add" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+      <i class="fa fa-plus mr-2" />
+      Create
+    </button>
+
+    <div class="dropdown-menu" aria-labelledby="dropdown-add">
+      <button each={ (form, i) in props.page.get('data.forms') } class="dropdown-item" onclick={ (e) => props.onItem(e, null, form) }>
+        { props.dashup.page(form).get('name') }
+      </button>
+    </div>
+  </div>
+  <script>
+  
+    // export default
+    export default class PagePhoneMenu {
+      
+      /**
+       * on before mount
+       */
+      onBeforeMount() {
+        // bind methods
+        this.numbers = this.numbers.bind(this);
+
+        // status
+        this.status = {
+          'busy'       : 'warning',
+          'open'       : 'success',
+          'ready'      : 'success',
+          'closed'     : 'light',
+          'offline'    : 'danger',
+          'pending'    : 'info',
+          'ringing'    : 'primary',
+          'connecting' : 'info',
+        };
+        this.ucfirst = (str) => {
+          // return
+          return str.charAt(0).toUpperCase() + str.slice(1);
+        };
+
+        // check window
+        if (typeof window === 'undefined') return;
+      }
+
+      /**
+       * on mounted
+       */
+      onMounted () {
+        // check window
+        if (typeof window === 'undefined') return;
+        
+        // update interval
+        this.updateInterval = setInterval(() => {
+          // update
+          if (this.props.call) this.update();
+        }, 1000);
+
+        // on numbers
+        this.props.page.on('numbers', this.numbers);
+        this.numbers();
+      }
+
+      /**
+       * on mounted
+       */
+      onBeforeUnmount () {
+        // check window
+        if (typeof window === 'undefined') return;
+        
+        // update interval
+        if (this.updateInterval) clearInterval(this.updateInterval);
+
+        // on numbers
+        this.props.page.removeListener('numbers', this.numbers);
+      }
+
+      /**
+       * on accept
+       */
+      onAccept(e) {
+        // accept call
+        this.props.connection.accept();
+
+        // update
+        this.props.accept(this.props.call.to);
+      }
+
+      /**
+       * on accept
+       */
+      onReject(e) {
+        // accept call
+        this.props.connection.reject();
+      }
+
+      /**
+       * on call
+       */
+      onMute(e) {
+        // prevent default
+        e.preventDefault();
+        e.stopPropagation();
+
+        // disconnect
+        this.props.call.muted ? this.props.connection.unmute() : this.props.connection.mute();
+      }
+
+      /**
+       * on number
+       */
+      onNumber(e, number) {
+        // set in props
+        this.props.props({
+          number,
+        });
+      }
+
+      /**
+       * on call
+       */
+      onDisconnect(e) {
+        // prevent default
+        e.preventDefault();
+        e.stopPropagation();
+
+        // disconnect
+        this.props.connection.disconnect();
+      }
+
+      /**
+       * load numbers
+       */
+      async numbers() {
+        // update numbers
+        this.update({
+          numbers : await this.props.page.action('list') || [],
+        });
+
+        // numbers
+        if (this.state.numbers.length === 1) {
+          // default
+          this.props.props({
+            number : this.state.numbers[0].number,
+          });
+        }
+      }
+    }
+  </script>
+</page-phone-menu>

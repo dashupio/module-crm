@@ -1,0 +1,86 @@
+<page-phone-event>
+  <div class="card mb-3" if={ props.event && props.event.get && types[getValue('type')] }>
+    <div class="card-body d-flex align-items-center">
+      <button class={ `btn btn-lg mr-3 btn-${types[getValue('type')].color}` }>
+        <i class={ `${types[getValue('type')].icon}` } />
+      </button>
+
+      <img class="img-avatar rounded-circle mr-3" if={ dotProp.get(getValue('user'), '0.avatar.0.thumbs.sm-sq.url') } src={ dotProp.get(getValue('user'), '0.avatar.0.thumbs.sm-sq.url') } />
+
+      <div>
+        <b class="d-block">
+          { dotProp.get(getValue('user'), '0.name') }
+          { getValue('title') }
+        </b>
+        <p if={ getValue('body') } class="m-0">
+          { getValue('body') }
+        </p>
+        <small>
+          { moment(getValue('time')).format('Do MMM, h:mma') }
+        </small>
+        <small if={ getValue('duration') } class="ml-2">
+          <b>
+            { new Date(getValue('duration')).toISOString().substr(11, 8) }
+          </b>
+        </small>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  
+    // perfect
+    import moment from 'moment';
+    import dotProp from 'dot-prop';
+
+    // export default
+    export default class PagePhoneEvent {
+
+
+      // ////////////////////////////////////////////////////////////////////////////
+      //
+      // RIOT METHODS
+      //
+      // ////////////////////////////////////////////////////////////////////////////
+
+      /**
+       * on before mount
+       */
+      onBeforeMount(...args) {
+        // set states
+        this.types = {
+          'call:inbound' : {
+            icon  : 'fa fa-phone',
+            color : 'info',
+          },
+          'call:outbound' : {
+            icon  : 'fa fa-phone-plus',
+            color : 'success',
+          },
+          'sms:inbound' : {
+            icon  : 'fa fa-comment',
+            color : 'info',
+          },
+          'sms:outbound' : {
+            icon  : 'fa fa-comment',
+            color : 'success',
+          },
+          'note' : {
+            icon  : 'fa fa-sticky-note',
+            color : 'secondary',
+          }
+        };
+        this.moment = moment;
+        this.dotProp = dotProp;
+      }
+
+      /**
+       * get value
+       */
+      getValue(name) {
+        // get value
+        return this.props.event.get(this.props.field(name).name || this.props.field(name).uuid);
+      }
+    }
+  </script>
+</page-phone-event>
