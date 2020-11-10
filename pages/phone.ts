@@ -306,8 +306,8 @@ export default class PhonePage extends Struct {
       // purchase number
       purchase = await client.incomingPhoneNumbers
         .create({
-          smsUrl      : 'https://dashup.dev/api/sms/incoming',
-          voiceUrl    : 'https://dashup.dev/api/call/incoming',
+          smsUrl      : `${this.dashup.config.url}/api/sms/incoming`,
+          voiceUrl    : `${this.dashup.config.url}/api/call/incoming`,
           phoneNumber : order.get('order.products.0.opts.number.phoneNumber'),
         });
     } catch (e) {
