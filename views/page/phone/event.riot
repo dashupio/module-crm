@@ -24,6 +24,13 @@
           </b>
         </small>
       </div>
+      
+      <div if={ getValue('recording') && getValue('recording').length } class="ml-auto">
+        <audio controls>
+          <source src={ dotProp.get(getValue('recording'), '0.url') } type="audio/x-wav">
+          Your browser does not support the audio element.
+        </audio>
+      </div>
     </div>
   </div>
 

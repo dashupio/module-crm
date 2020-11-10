@@ -454,6 +454,8 @@
         // add event
         await this.addEvent({
           body,
+          to    : number,
+          from  : this.props.number,
           type  : 'sms:outbound',
           item  : this.state.item.get('_id'),
           time  : new Date(),
@@ -610,6 +612,8 @@
 
         // call
         const actualCall = await this.addEvent({
+          to    : number,
+          from  : this.props.number,
           time  : new Date(),
           type  : `call:${incoming ? 'inbound' : 'outbound'}`,
           item  : item.get('_id'),
@@ -727,16 +731,18 @@
       /**
        * add event
        */
-      async addEvent({ _id, title, type, item, body, time, duration }) {
+      async addEvent({ _id, title, from, to, type, item, body, time, duration }) {
         // get fields
         const fields = this.getFields();
 
         // get fields
+        const toField = this.getField('to', fields) || {};
         const typeField = this.getField('type', fields) || {};
         const itemField = this.getField('item', fields) || {};
         const bodyField = this.getField('body', fields) || {};
         const timeField = this.getField('time', fields) || {};
         const userField = this.getField('user', fields) || {};
+        const fromField = this.getField('from', fields) || {};
         const titleField = this.getField('title', fields) || {};
         const durationField = this.getField('duration', fields) || {};
 
@@ -750,6 +756,8 @@
         }, 'form.submit', {
           _id,
 
+          [toField.name || toField.uuid] : to,
+          [fromField.name || fromField.uuid] : from,
           [itemField.name || itemField.uuid] : item,
           [userField.name || userField.uuid] : this.props.dashup.get('_meta.member'),
           [typeField.name || typeField.uuid] : type,
