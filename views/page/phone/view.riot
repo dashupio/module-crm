@@ -305,6 +305,7 @@
         delete newProps.item;
         delete newProps.view;
         delete newProps.class;
+        delete newProps.event;
         delete newProps.struct;
 
         // delete page
@@ -576,7 +577,7 @@
         // find or create number
         const item = incoming ? (await query.where({
           [numberField.name || numberField.uuid] : incoming,
-        }).findOne() || await this.props.dashup.page(model).create({
+        }).findOne() || await this.props.dashup.page(this.props.page.get('data.model')).create({
           [numberField.name || numberField.uuid] : incoming,
         })) : this.state.item;
 
