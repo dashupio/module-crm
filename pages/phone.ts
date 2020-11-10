@@ -202,7 +202,7 @@ export default class PhonePage extends Struct {
     const voiceGrant = new Twilio.jwt.AccessToken.VoiceGrant({
       incomingAllow          : true, // Optional: add to allow incoming calls
       outgoingApplicationSid : this.dashup.config.twilioApp,
-    });
+    }); 
 
     // create access token
     const token = new Twilio.jwt.AccessToken(
