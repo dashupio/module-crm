@@ -1,42 +1,51 @@
 <page-phone-view>
   <div class="d-flex flex-column flex-1">
-    <div class="row g-0 flex-1">
+    <div if={ !loading('grid') && props.page.get('data.forms.0') && props.page.get('data.type') === 'grid' } class={ `dashup-grid${props.dialling ? ' d-none' : ''}` }>
+      <dashup-view ref={ ref('grid') } view="grid" type="page" struct="grid" model={ props.page.get('data.model') } fields={ props.context.fields } get-field={ getFieldType } on-row={ (e, item) => onClick(e, item) } { ...getProps() } />
+    </div>
+    <div if={ props.dialling || (!props.page.get('data.type') || props.page.get('data.type') === 'list') } class={ `row g-0 flex-1${props.page.get('data.type') === 'grid' ? ' align-items-start flex-column' : ''}` }>
 
       <!-- CHAT LIST -->
-      <div class="col chat-column mb-4 mb-lg-0">
+      <div if={ !props.page.get('data.type') || props.page.get('data.type') === 'list' } class="col chat-column mb-4 mb-lg-0">
         <div class="card mb-3">
           <div class="card-body">
             <h4>
               Stats
             </h4>
 
-            <!-- total calls -->
-            <label class="form-label d-flex">
-              <b class="mr-2">{ state.stats.calls.total }</b>Calls (24h)
-              <span class="ml-auto">
-                <b class="mr-2">{ state.stats.calls.avg }</b>Avg
-              </span>
-            </label>
-            <div class="progress bg-primary mb-2">
-              <div class="progress-bar bg-success" role="progressbar" aria-valuenow={ getPercent(state.stats.calls.total, state.stats.calls.avg) } style={ `width:${getPercent(state.stats.calls.total, state.stats.calls.avg)}%` } aria-valuemin="0" aria-valuemax="100"></div>
-            </div>
-            <!-- / total calls -->
+            <div class={ props.page.get('data.type') === 'grid' ? 'row' : '' }>
+              <!-- total calls -->
+              <div class={ props.page.get('data.type') === 'grid' ? 'col-6' : '' }>
+                <label class="form-label d-flex">
+                  <b class="mr-2">{ state.stats.calls.total }</b>Calls (24h)
+                  <span class="ml-auto">
+                    <b class="mr-2">{ state.stats.calls.avg }</b>Avg
+                  </span>
+                </label>
+                <div class="progress bg-primary mb-2">
+                  <div class="progress-bar bg-success" role="progressbar" aria-valuenow={ getPercent(state.stats.calls.total, state.stats.calls.avg) } style={ `width:${getPercent(state.stats.calls.total, state.stats.calls.avg)}%` } aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+              </div>
+              <!-- / total calls -->
 
-            <!-- total calls -->
-            <label class="form-label d-flex">
-              <b class="mr-2">{ new Date(state.stats.duration.total).toISOString().substr(11, 8) }</b>Duration (24h)
-              <span class="ml-auto">
-                <b class="mr-2">{ new Date(state.stats.duration.avg).toISOString().substr(11, 8) }</b>Avg
-              </span>
-            </label>
-            <div class="progress bg-primary">
-              <div class="progress-bar bg-success" role="progressbar" aria-valuenow={ getPercent(state.stats.duration.total, state.stats.duration.avg) } style={ `width:${getPercent(state.stats.duration.total, state.stats.duration.avg)}%` } aria-valuemin="0" aria-valuemax="100"></div>
+              <!-- total calls -->
+              <div class={ props.page.get('data.type') === 'grid' ? 'col-6' : '' }>
+                <label class="form-label d-flex">
+                  <b class="mr-2">{ new Date(state.stats.duration.total).toISOString().substr(11, 8) }</b>Duration (24h)
+                  <span class="ml-auto">
+                    <b class="mr-2">{ new Date(state.stats.duration.avg).toISOString().substr(11, 8) }</b>Avg
+                  </span>
+                </label>
+                <div class="progress bg-primary">
+                  <div class="progress-bar bg-success" role="progressbar" aria-valuenow={ getPercent(state.stats.duration.total, state.stats.duration.avg) } style={ `width:${getPercent(state.stats.duration.total, state.stats.duration.avg)}%` } aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+              </div>
+              <!-- / total calls -->
             </div>
-            <!-- / total calls -->
-            
+
           </div>
         </div>
-        <div class="column-body">
+        <div class="column-body" if={ !props.page.get('data.type') || props.page.get('data.type') === 'list' }>
           <div class="column-body-inner">
             <div class="card">
               <div class="card-body task-container">
@@ -49,7 +58,7 @@
       <!-- / CHAT LIST -->
 
       <!-- CHAT BODY -->
-      <div class="col ml-3 d-flex flex-column" if={ loading('item') }>
+      <div class={ `col d-flex flex-column${ !props.page.get('data.type') || props.page.get('data.type') === 'list' ? ' ml-3' : ''}` } if={ loading('item') }>
         <div class="mx-auto my-5">
           <i class="fa fa-spinner fa-spin h1" />
         </div>
@@ -57,9 +66,53 @@
       <!-- / CHAT BODY -->
 
       <!-- CHAT MAIN -->
-      <div class="col ml-3 d-flex flex-column" if={ state.item && !loading('item') }>
+      <div class={ `col d-flex flex-column${ !props.page.get('data.type') || props.page.get('data.type') === 'list' ? ' ml-3' : ''}` } if={ state.item && !loading('item') }>
         <div class="row">
           <div class="col-lg-5">
+
+            <div if={ props.page.get('data.type') === 'grid' } class="card mb-3">
+              <div class="card-body">
+                <h4 class="d-flex mb-3">
+                  Stats
+
+                  <div class="ml-auto">
+                    { (index + 1) } / { getTotal() }
+                  </div>
+                </h4>
+
+                <div class={ props.page.get('data.type') === 'grid' ? 'row' : '' }>
+                  <!-- total calls -->
+                  <div class={ props.page.get('data.type') === 'grid' ? 'col-6' : '' }>
+                    <label class="form-label d-flex">
+                      <b class="mr-2">{ state.stats.calls.total }</b>Calls (24h)
+                      <span class="ml-auto">
+                        <b class="mr-2">{ state.stats.calls.avg }</b>Avg
+                      </span>
+                    </label>
+                    <div class="progress bg-primary mb-2">
+                      <div class="progress-bar bg-success" role="progressbar" aria-valuenow={ getPercent(state.stats.calls.total, state.stats.calls.avg) } style={ `width:${getPercent(state.stats.calls.total, state.stats.calls.avg)}%` } aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                  </div>
+                  <!-- / total calls -->
+
+                  <!-- total calls -->
+                  <div class={ props.page.get('data.type') === 'grid' ? 'col-6' : '' }>
+                    <label class="form-label d-flex">
+                      <b class="mr-2">{ new Date(state.stats.duration.total).toISOString().substr(11, 8) }</b>Duration (24h)
+                      <span class="ml-auto">
+                        <b class="mr-2">{ new Date(state.stats.duration.avg).toISOString().substr(11, 8) }</b>Avg
+                      </span>
+                    </label>
+                    <div class="progress bg-primary">
+                      <div class="progress-bar bg-success" role="progressbar" aria-valuenow={ getPercent(state.stats.duration.total, state.stats.duration.avg) } style={ `width:${getPercent(state.stats.duration.total, state.stats.duration.avg)}%` } aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                  </div>
+                  <!-- / total calls -->
+                </div>
+
+              </div>
+            </div>
+
             <div class="card mb-3">
               <div class="card-body">
                 <hbs template={ props.page.get('data.view') || props.page.get('data.display') || '' } data={ state.item ? state.item.get() : {} } />
@@ -150,6 +203,7 @@
   <script>
     // perfect
     import moment from 'moment';
+    import dotProp from 'dot-prop';
     import PerfectScrollbar from 'perfect-scrollbar';
     import { Device } from 'twilio-client';
 
@@ -203,9 +257,10 @@
         };
 
         // bind
-        this.init     = this.init.bind(this);
-        this.onClick  = this.onClick.bind(this);
-        this.getStats = this.getStats.bind(this);
+        this.init         = this.init.bind(this);
+        this.onClick      = this.onClick.bind(this);
+        this.getStats     = this.getStats.bind(this);
+        this.getFieldType = this.getFieldType.bind(this);
 
         // listeners
         this.props.page.on('reload', this.safeUpdate);
@@ -309,6 +364,7 @@
         delete newProps.class;
         delete newProps.event;
         delete newProps.struct;
+        if (!noPage) delete newProps.fields;
 
         // delete page
         if (noPage) {
@@ -639,10 +695,11 @@
         }, 1000);
 
         // on disconnect
-        this.props.connection.on('disconnect', () => {
+        this.props.connection.on('disconnect', async () => {
           // call null
           this.props.props({
-            call : null,
+            call       : null,
+            connection : null,
           });
 
           // time field
@@ -654,6 +711,27 @@
           
           // clear interval
           if (this.callInterval) clearInterval(this.callInterval);
+
+          // check dialling
+          if (this.props.dialling && !this.props.paused) {
+            // index
+            this.index = this.index + 1;
+
+            // set item
+            const item = dotProp.get(this, `refs.grid.refs.body.state.items.${this.index}`);
+
+            // check item
+            if (!item) {
+              // finish dialling
+              return this.props.props({
+                dialling : false,
+              });
+            }
+
+            // on click
+            await this.onClick(null, item);
+            this.onCall();
+          }
         });
 
         // on disconnect
@@ -792,6 +870,22 @@
       }
 
       /**
+       * get field
+       */
+      getFieldType({ type }) {
+        // return field
+        return this.props.fields.find((f) => f.type === type);
+      }
+
+      /**
+       * get total
+       */
+      getTotal() {
+        // return count
+        return dotProp.get(this, 'refs.grid.refs.body.state.count') || 0;
+      }
+
+      /**
        * get fields
        */
       getFields() {
@@ -911,6 +1005,7 @@
         if (this.state.items && this.state.items.removeListener) {
           // safe update
           this.state.items.removeListener('update', this.safeUpdate);
+          this.state.items.deafen();
         }
 
         // get model
@@ -984,6 +1079,42 @@
 
         // interval
         this.props.props({
+          end : async () => {
+            // disconnect
+            return this.props.connection ? await this.props.connection.disconnect() : null;
+          },
+          begin : async (resume) => {
+            // set index
+            this.index = resume ? this.index : 0;
+
+            // begin
+            await this.onClick(null, dotProp.get(this, `refs.grid.refs.body.state.items.${this.index}`));
+            this.onCall();
+          },
+          next : async () => {
+            // disconnect
+            if (this.props.connection) {
+              // disconnect
+              await this.props.connection.disconnect();
+            } else {
+              // set index
+              this.index = this.index + 1;
+
+              // check item
+              const item = dotProp.get(this, `refs.grid.refs.body.state.items.${this.index}`);
+
+              // check item
+              if (!item) {
+                // finish dialling
+                return this.props.props({
+                  dialling : false,
+                });
+              }
+
+              // begin
+              await this.onClick(null, item);
+            }
+          },
           accept : (number) => {
             // on call
             this.onCall(null, number);

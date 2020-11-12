@@ -31,20 +31,37 @@
     </button>
   </div>
 
-  <button if={ props.call && props.call.type === 'incoming' } class="btn btn-success mr-2" onclick={ (e) => onAccept(e) }>
-    <i class={ `fa fa-phone mr-2` } />
-    Accept
-  </button>
-  <button if={ props.call && props.call.type === 'incoming' } class="btn btn-danger mr-2" onclick={ (e) => onReject(e) }>
-    <i class={ `fa fa-times mr-2` } />
-    Reject
-  </button>
+  <div if={ props.call && props.call.type === 'incoming' } class="btn-group mr-1">
+    <button if={ props.call && props.call.type === 'incoming' } class="btn btn-success mr-2" onclick={ (e) => onAccept(e) }>
+      <i class={ `fa fa-phone mr-2` } />
+      Accept
+    </button>
+    <button if={ props.call && props.call.type === 'incoming' } class="btn btn-danger mr-2" onclick={ (e) => onReject(e) }>
+      <i class={ `fa fa-times mr-2` } />
+      Reject
+    </button>
+  </div>
 
-  <button if={ props.call && !props.call.type } class={ `btn btn-${props.call.muted ? 'danger' : 'success'} mr-1` } onclick={ (e) => onMute(e) }>
-    <i class={ `fa fa-${props.call.muted ? 'volume-mute' : 'volume'}` } />
-  </button>
-  <button if={ props.call && !props.call.type } class="btn btn-danger mr-2" onclick={ (e) => onDisconnect(e) }>
-    <i class={ `fa fa-times` } />
+  <div if={ props.call && !props.call.type } class="btn-group mr-1">
+    <button class={ `btn btn-${props.call.muted ? 'danger' : 'success'}` } onclick={ (e) => onMute(e) }>
+      <i class={ `fa fa-${props.call.muted ? 'volume-mute' : 'volume'}` } />
+    </button>
+    <button if={ props.call && !props.call.type } class="btn btn-danger" onclick={ (e) => onDisconnect(e) }>
+      <i class={ `fa fa-times` } />
+    </button>
+  </div>
+
+  <div if={ props.dialling } class="btn-group mr-1">
+    <button if={ props.dialling } class="btn btn-info" onclick={ (e) => onNext(e) }>
+      Next Caller
+    </button>
+    <button if={ props.dialling } class={ `btn btn-${props.paused ? 'info' : 'info'}` } onclick={ (e) => onPause(e) }>
+      { props.paused ? 'Resume' : 'Pause' }
+    </button>
+  </div>
+
+  <button if={ props.page.get('data.type') === 'grid' } class={ `btn mr-2 btn-${props.dialling ? 'danger' : 'success'}` } onclick={ (e) => onDialling(e) }>
+    { props.dialling ? 'End' : 'Start' }
   </button>
 
   <button if={ props.dashup.can(props.page, 'submit') && !props.page.get('data.forms.1') } class="btn btn-success" type="button" onclick={ (e) => props.onItem(e) }>
@@ -144,6 +161,66 @@
       onReject(e) {
         // accept call
         this.props.connection.reject();
+      }
+
+      /**
+       * on dialling
+       */
+      onPause(e) {
+        // prevent default
+        e.preventDefault();
+        e.stopPropagation();
+
+        // set dialling
+        const paused = !this.props.paused;
+
+        // set dialling
+        this.props.props({
+          paused,
+        });
+
+        // check dialling
+        if (!paused) {
+          // begin
+          this.props.next();
+        }
+      }
+
+      /**
+       * on dialling
+       */
+      onDialling(e) {
+        // prevent default
+        e.preventDefault();
+        e.stopPropagation();
+
+        // set dialling
+        const dialling = !this.props.dialling;
+
+        // set dialling
+        this.props.props({
+          dialling,
+        });
+
+        // check dialling
+        if (dialling) {
+          // begin
+          this.props.begin();
+        } else {
+          this.props.end();
+        }
+      }
+
+      /**
+       * on next
+       */
+      onNext(e) {
+        // prevent default
+        e.preventDefault();
+        e.stopPropagation();
+      
+        // begin
+        this.props.next();
       }
 
       /**
