@@ -278,10 +278,12 @@
         if (this.state.items && this.state.items.removeListener) {
           // safe update
           this.state.items.removeListener('update', this.safeUpdate);
+          this.state.items.deafen();
         }
         if (this.state.events && this.state.events.removeListener) {
           // safe update
           this.state.events.removeListener('update', this.safeUpdate);
+          this.state.events.deafen();
         }
       }
 
@@ -516,6 +518,7 @@
         if (this.state.events && this.state.events.removeListener) {
           // safe update
           this.state.events.removeListener('update', this.safeUpdate);
+          this.state.events.deafen();
         }
 
         // get model
