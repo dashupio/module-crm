@@ -180,7 +180,7 @@ export default class PhonePage extends Struct {
     }).find();
 
     // return data
-    return numbers.map((number) => {
+    return (numbers || []).map((number) => {
       // return data
       return {
         _id    : number.get('_id'),
