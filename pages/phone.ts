@@ -173,7 +173,7 @@ export default class PhonePage extends Struct {
       page   : '5fa8f1ad5cc2fcc84ff61ec0',
       dashup : '5efdbeafdd5a8af0344187ed',
     }, 'model').where({
-      page   : opts.page,
+    //  page   : opts.page,
       dashup : opts.dashup,
     }).ne('phone', null).where({
       'order.payments.0.status' : 'active',

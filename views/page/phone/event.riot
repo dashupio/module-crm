@@ -85,8 +85,14 @@
        * get value
        */
       getValue(name) {
+        // check phone
+        if (!this.props.phone) return;
+
+        // fields
+        this.fields = this.fields || this.props.phone.fields(this.props);
+
         // get value
-        return this.props.event.get(this.props.field(name).name || this.props.field(name).uuid);
+        return this.props.event.get(this.props.phone.field(this.props, name, this.fields).name || this.props.phone.field(this.props, name, this.fields).uuid);
       }
     }
   </script>

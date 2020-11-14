@@ -1,5 +1,5 @@
 <page-phone-filter>
-  <dashup-page-filter if={ props.page.get('data.enableFilter') } tags={ getTags() } fields={ props.context.fields } on-search={ (e) => onSearch(e) } has-user={ true } { ...getProps() } />
+  <dashup-page-filter sort={ true } tags={ getTags() } fields={ props.context.fields } on-search={ (e) => onSearch(e) } has-user={ true } { ...getProps() } />
 
   <script>
     // export default

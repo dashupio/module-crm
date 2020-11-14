@@ -1,89 +1,127 @@
 <page-phone-menu>
-
-  <button if={ !props.call && state.numbers && state.numbers.length === 1 && props.number } class="btn btn-link mr-2">
-    { props.number }
-  </button>
-
-  <div if={ !props.call && state.numbers && state.numbers.length > 1 } class="btn-group dropdown mr-2">
-    <button class={ `btn btn-${props.number ? 'light' : 'info'}` } id="dropdown-number" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-      { props.number || 'Select Number' }
+  <div>
+    <!-- NUMBERS -->
+    <button if={ connection && connection.number && !connection.call } class="btn btn-link mr-2">
+      { connection.number }
     </button>
+    <div if={ state.numbers && state.numbers.length > 1 && (!connection || !connection.call) } class="btn-group dropdown mr-2">
+      <button class={ `btn btn-${connection && connection.number ? 'light' : 'info'}` } id="dropdown-number" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        { connection && connection.number || 'Select Number' }
+      </button>
+      <div class="dropdown-menu" aria-labelledby="dropdown-number">
+        <button each={ (number, i) in state.numbers } class="dropdown-item" onclick={ (e) => onNumber(e, number.number) }>
+          { number.number }
+        </button>
+      </div>
+    </div>
+    <!-- / NUMBERS -->
 
-    <div class="dropdown-menu" aria-labelledby="dropdown-number">
-      <button each={ (number, i) in state.numbers } class="dropdown-item" onclick={ (e) => onNumber(e, number.number) }>
-        { number.number }
+    <!-- STATUS -->
+    <button if={ connection && connection.number && !connection.call } class={ `btn mr-2 btn-${status[connection.status || 'connecting']}` }>
+      <i class="fa fa-plug mr-2" />
+      { ucfirst(connection.status || 'connecting') }
+    </button>
+    <button if={ connection && connection.call } class="btn btn-link mr-2">
+      { new Date((new Date().getTime() - connection.call.start.getTime())).toISOString().substr(11, 8) }
+    </button>
+    <div if={ connection && connection.call } class="btn-group mr-1">
+      <button class={ `btn btn-${status[connection.call.status || 'connecting']}` }>
+        { ucfirst(connection.call.status) }
       </button>
     </div>
-  </div>
+    <!-- / STATUS -->
 
-  <button if={ props.number && !props.call } class={ `btn mr-2 btn-${status[props.status || 'connecting']}` }>
-    <i class="fa fa-plug mr-2" />
-    { ucfirst(props.status || 'connecting') }
-  </button>
+    <!-- INCOMING -->
+    <div if={ connection && connection.call && connection.call.type === 'incoming' && !connection.call.answered } class="btn-group mr-1">
+      <button class="btn btn-success mr-2" onclick={ (e) => onStart(e) }>
+        <i class={ `fa fa-phone mr-2` } />
+        Accept
+      </button>
+      <button class="btn btn-danger mr-2" onclick={ (e) => onEnd(e) }>
+        <i class={ `fa fa-times mr-2` } />
+        Reject
+      </button>
+    </div>
+    <!-- / INCOMING -->
 
-  <button if={ props.call } class="btn btn-link mr-2">
-    { new Date((new Date().getTime() - props.call.start.getTime())).toISOString().substr(11, 8) }
-  </button>
+    <!-- CALL METHODS -->
+    <div if={ connection && connection.call && (connection.call.type !== 'incoming' || connection.call.answered) } class="btn-group mr-1">
+      <button class={ `btn btn-${connection.call.muted ? 'danger' : 'success'}` } onclick={ (e) => onMute(e) }>
+        <i class={ `fa fa-${connection.call.muted ? 'volume-mute' : 'volume'}` } />
+      </button>
+      <button class="btn btn-danger" onclick={ (e) => onEnd(e) }>
+        <i class={ `fa fa-times` } />
+      </button>
+    </div>
+    <!-- / CALL METHODS -->
 
-  <div if={ props.call } class="btn-group mr-1">
-    <button class={ `btn btn-${status[props.call.status || 'connecting']}` }>
-      { ucfirst(props.call.status) }
+    <!-- POWER DIALLER -->
+    <div if={ connection } class="btn-group mr-2">
+      <button if={ !connection.dialer } class="btn btn-primary" onclick={ (e) => onDialer(e) }>
+        Start Dialer
+      </button>
+      <button if={ connection.dialer } class="btn btn-primary">
+        { ucfirst(connection.dialer.status) } - 
+        { connection.dialer.dialled.length } of { phone.items(props).length }
+      </button>
+      <button if={ connection.dialer && connection.dialer.status === 'dialing' } class="btn btn-info" onclick={ (e) => onNext(e) }>
+        <i class="fa fa-forward" />
+      </button>
+      <button if={ connection.dialer && connection.dialer.status === 'dialing' } class="btn btn-danger" onclick={ (e) => onPause(e) }>
+        <i class="fa fa-pause" />
+      </button>
+      <button if={ connection.dialer && connection.dialer.status === 'paused' } class="btn btn-success" onclick={ (e) => onPlay(e) }>
+        <i class="fa fa-play" />
+      </button>
+      <button if={ connection.dialer && connection.dialer.status === 'paused' } class="btn btn-danger" onclick={ (e) => onFinish(e) }>
+        <i class="fa fa-times" />
+      </button>
+      <button if={ connection.dialer && connection.dialer.status === 'finished' } class="btn btn-danger" onclick={ (e) => onFinish(e) }>
+        <i class="fa fa-times" />
+      </button>
+    </div>
+    <!-- / POWER DIALLER -->
+
+    <!-- DISPLAY -->
+    <button class="mr-2 btn btn-primary" onclick={ (e) => onDisplay(e) }>
+      <i class={ `fa fa-${props.display === 'grid' ? 'columns' : 'th'}` } />
     </button>
-  </div>
-
-  <div if={ props.call && props.call.type === 'incoming' } class="btn-group mr-1">
-    <button if={ props.call && props.call.type === 'incoming' } class="btn btn-success mr-2" onclick={ (e) => onAccept(e) }>
-      <i class={ `fa fa-phone mr-2` } />
-      Accept
-    </button>
-    <button if={ props.call && props.call.type === 'incoming' } class="btn btn-danger mr-2" onclick={ (e) => onReject(e) }>
-      <i class={ `fa fa-times mr-2` } />
-      Reject
-    </button>
-  </div>
-
-  <div if={ props.call && !props.call.type } class="btn-group mr-1">
-    <button class={ `btn btn-${props.call.muted ? 'danger' : 'success'}` } onclick={ (e) => onMute(e) }>
-      <i class={ `fa fa-${props.call.muted ? 'volume-mute' : 'volume'}` } />
-    </button>
-    <button if={ props.call && !props.call.type } class="btn btn-danger" onclick={ (e) => onDisconnect(e) }>
-      <i class={ `fa fa-times` } />
-    </button>
-  </div>
-
-  <div if={ props.dialling } class="btn-group mr-1">
-    <button if={ props.dialling } class="btn btn-info" onclick={ (e) => onNext(e) }>
-      Next Caller
-    </button>
-    <button if={ props.dialling } class={ `btn btn-${props.paused ? 'info' : 'info'}` } onclick={ (e) => onPause(e) }>
-      { props.paused ? 'Resume' : 'Pause' }
-    </button>
-  </div>
-
-  <button if={ props.page.get('data.type') === 'grid' } class={ `btn mr-2 btn-${props.dialling ? 'danger' : 'success'}` } onclick={ (e) => onDialling(e) }>
-    { props.dialling ? 'End' : 'Start' }
-  </button>
-
-  <button if={ props.dashup.can(props.page, 'submit') && !props.page.get('data.forms.1') } class="btn btn-success" type="button" onclick={ (e) => props.onItem(e) }>
-    <i class="fa fa-plus mr-2" />
-    Create
-  </button>
-  <div if={ props.dashup.can(props.page, 'submit') && props.page.get('data.forms.1') } class="btn-group dropdown">
-    <button class="btn btn-success dropdown-toggle" type="button" id="dropdown-add" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+    <!-- / DISPLAY -->
+    
+    <!-- CREATE -->
+    <button if={ props.dashup.can(props.page, 'submit') && !props.page.get('data.forms.1') } class="btn btn-success" type="button" onclick={ (e) => props.onItem(e) }>
       <i class="fa fa-plus mr-2" />
       Create
     </button>
-
-    <div class="dropdown-menu" aria-labelledby="dropdown-add">
-      <button each={ (form, i) in props.page.get('data.forms') } class="dropdown-item" onclick={ (e) => props.onItem(e, null, form) }>
-        { props.dashup.page(form).get('name') }
+    <div if={ props.dashup.can(props.page, 'submit') && props.page.get('data.forms.1') } class="btn-group dropdown">
+      <button class="btn btn-success dropdown-toggle" type="button" id="dropdown-add" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        <i class="fa fa-plus mr-2" />
+        Create
       </button>
+
+      <div class="dropdown-menu" aria-labelledby="dropdown-add">
+        <button each={ (form, i) in props.page.get('data.forms') } class="dropdown-item" onclick={ (e) => props.onItem(e, null, form) }>
+          { props.dashup.page(form).get('name') }
+        </button>
+      </div>
     </div>
+    <!-- / CREATE -->
   </div>
+
   <script>
+    // import phone
+    import uuid from 'shortid';
+    import Phone from '../../js/phone.ts';
   
     // export default
     export default class PagePhoneMenu {
+
+
+      // ////////////////////////////////////////////////////////////////////////////
+      //
+      // RIOT METHODS
+      //
+      // ////////////////////////////////////////////////////////////////////////////
       
       /**
        * on before mount
@@ -91,6 +129,9 @@
       onBeforeMount() {
         // bind methods
         this.numbers = this.numbers.bind(this);
+
+        // phone this
+        Phone(this);
 
         // status
         this.status = {
@@ -122,7 +163,7 @@
         // update interval
         this.updateInterval = setInterval(() => {
           // update
-          if (this.props.call) this.update();
+          if (this.connection && this.connection.call) this.update();
         }, 1000);
 
         // on numbers
@@ -144,83 +185,38 @@
         this.props.page.removeListener('numbers', this.numbers);
       }
 
+
+      // ////////////////////////////////////////////////////////////////////////////
+      //
+      // EVENT METHODS
+      //
+      // ////////////////////////////////////////////////////////////////////////////
+
       /**
        * on accept
        */
-      onAccept(e) {
-        // accept call
-        this.props.connection.accept();
-
+      onStart(e) {
         // update
-        this.props.accept(this.props.call.to);
+        this.connection.call.answered = new Date();
+        this.connection.conn.accept();
+      }
+
+      /**
+       * on display
+       */
+      onDisplay(e) {
+        // update
+        this.props.props({
+          display : this.props.display === 'grid' ? 'list' : 'grid',
+        });
       }
 
       /**
        * on accept
        */
-      onReject(e) {
+      onEnd(e) {
         // accept call
-        this.props.connection.reject();
-      }
-
-      /**
-       * on dialling
-       */
-      onPause(e) {
-        // prevent default
-        e.preventDefault();
-        e.stopPropagation();
-
-        // set dialling
-        const paused = !this.props.paused;
-
-        // set dialling
-        this.props.props({
-          paused,
-        });
-
-        // check dialling
-        if (!paused) {
-          // begin
-          this.props.next();
-        }
-      }
-
-      /**
-       * on dialling
-       */
-      onDialling(e) {
-        // prevent default
-        e.preventDefault();
-        e.stopPropagation();
-
-        // set dialling
-        const dialling = !this.props.dialling;
-
-        // set dialling
-        this.props.props({
-          dialling,
-        });
-
-        // check dialling
-        if (dialling) {
-          // begin
-          this.props.begin();
-        } else {
-          this.props.end();
-        }
-      }
-
-      /**
-       * on next
-       */
-      onNext(e) {
-        // prevent default
-        e.preventDefault();
-        e.stopPropagation();
-      
-        // begin
-        this.props.next();
+        this.connection.call.type === 'outbound' ? this.connection.conn.disconnect() : this.connection.conn.reject();
       }
 
       /**
@@ -231,8 +227,8 @@
         e.preventDefault();
         e.stopPropagation();
 
-        // disconnect
-        this.props.call.muted ? this.props.connection.unmute() : this.props.connection.mute();
+        // accept call
+        this.connection.call.muted ? this.connection.conn.unmute() : this.connection.conn.mute();
       }
 
       /**
@@ -240,22 +236,75 @@
        */
       onNumber(e, number) {
         // set in props
-        this.props.props({
-          number,
-        });
+        this.phone.number(this.props, number);
       }
 
       /**
-       * on call
+       * start dialer
        */
-      onDisconnect(e) {
+      onDialer(e) {
         // prevent default
         e.preventDefault();
         e.stopPropagation();
 
-        // disconnect
-        this.props.connection.disconnect();
+        // set in props
+        this.phone.dialer(this.props, uuid());
       }
+
+      /**
+       * next dialer
+       */
+      onNext(e) {
+        // prevent default
+        e.preventDefault();
+        e.stopPropagation();
+
+        // pause dialer
+        this.phone.next(this.props);
+      }
+
+      /**
+       * pause dialer
+       */
+      onPlay(e) {
+        // prevent default
+        e.preventDefault();
+        e.stopPropagation();
+
+        // pause dialer
+        this.phone.play(this.props);
+      }
+
+      /**
+       * pause dialer
+       */
+      onPause(e) {
+        // prevent default
+        e.preventDefault();
+        e.stopPropagation();
+
+        // pause dialer
+        this.phone.pause(this.props);
+      }
+
+      /**
+       * pause dialer
+       */
+      onFinish(e) {
+        // prevent default
+        e.preventDefault();
+        e.stopPropagation();
+
+        // pause dialer
+        this.phone.finish(this.props);
+      }
+
+
+      // ////////////////////////////////////////////////////////////////////////////
+      //
+      // MISC METHODS
+      //
+      // ////////////////////////////////////////////////////////////////////////////
 
       /**
        * load numbers
@@ -269,9 +318,7 @@
         // numbers
         if (this.state.numbers.length === 1) {
           // default
-          this.props.props({
-            number : this.state.numbers[0].number,
-          });
+          this.phone.number(this.props, this.state.numbers[0].number);
         }
       }
     }

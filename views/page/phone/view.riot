@@ -1,55 +1,55 @@
 <page-phone-view>
+
   <div class="d-flex flex-column flex-1">
-    <div if={ !loading('grid') && props.page.get('data.forms.0') && props.page.get('data.type') === 'grid' } class={ `dashup-grid${props.dialling ? ' d-none' : ''}` }>
-      <dashup-view ref={ ref('grid') } view="grid" type="page" struct="grid" model={ props.page.get('data.model') } fields={ props.context.fields } get-field={ getFieldType } on-row={ (e, item) => onClick(e, item) } { ...getProps() } />
-    </div>
-    <div if={ props.dialling || (!props.page.get('data.type') || props.page.get('data.type') === 'list') } class={ `row g-0 flex-1${props.page.get('data.type') === 'grid' ? ' align-items-start flex-column' : ''}` }>
+
+    <!-- LIST VIEW -->
+    <div class="row g-0 flex-1">
+
+      <!-- GRID VIEW -->
+      <div if={ props.page.get('data.forms.0') } class={ `col-lg-6 dashup-grid${props.display !== 'grid' ? ' d-none' : ''}` }>
+        <dashup-view view="grid" type="page" struct="grid" active={ connection && connection.item ? [connection.item] : [] } ref={ ref('grid') } rows={ phone.items(props) } no-pagination={ true } fields={ props.context.fields } get-field={ getFieldType } { ...getProps() } />
+      </div>
+      <!-- / GRID VIEW -->
 
       <!-- CHAT LIST -->
-      <div if={ !props.page.get('data.type') || props.page.get('data.type') === 'list' } class="col chat-column mb-4 mb-lg-0">
+      <div class={ `col chat-column mb-4 mb-lg-0${props.display === 'grid' ? ' d-none' : ''}` }>
         <div class="card mb-3">
           <div class="card-body">
             <h4>
               Stats
             </h4>
 
-            <div class={ props.page.get('data.type') === 'grid' ? 'row' : '' }>
-              <!-- total calls -->
-              <div class={ props.page.get('data.type') === 'grid' ? 'col-6' : '' }>
-                <label class="form-label d-flex">
-                  <b class="mr-2">{ state.stats.calls.total }</b>Calls (24h)
-                  <span class="ml-auto">
-                    <b class="mr-2">{ state.stats.calls.avg }</b>Avg
-                  </span>
-                </label>
-                <div class="progress bg-primary mb-2">
-                  <div class="progress-bar bg-success" role="progressbar" aria-valuenow={ getPercent(state.stats.calls.total, state.stats.calls.avg) } style={ `width:${getPercent(state.stats.calls.total, state.stats.calls.avg)}%` } aria-valuemin="0" aria-valuemax="100"></div>
-                </div>
-              </div>
-              <!-- / total calls -->
-
-              <!-- total calls -->
-              <div class={ props.page.get('data.type') === 'grid' ? 'col-6' : '' }>
-                <label class="form-label d-flex">
-                  <b class="mr-2">{ new Date(state.stats.duration.total).toISOString().substr(11, 8) }</b>Duration (24h)
-                  <span class="ml-auto">
-                    <b class="mr-2">{ new Date(state.stats.duration.avg).toISOString().substr(11, 8) }</b>Avg
-                  </span>
-                </label>
-                <div class="progress bg-primary">
-                  <div class="progress-bar bg-success" role="progressbar" aria-valuenow={ getPercent(state.stats.duration.total, state.stats.duration.avg) } style={ `width:${getPercent(state.stats.duration.total, state.stats.duration.avg)}%` } aria-valuemin="0" aria-valuemax="100"></div>
-                </div>
-              </div>
-              <!-- / total calls -->
+            <!-- total calls -->
+            <label class="form-label d-flex">
+              <b class="mr-2">{ state.stats.calls.total }</b>Calls (24h)
+              <span class="ml-auto">
+                <b class="mr-2">{ state.stats.calls.avg }</b>Avg
+              </span>
+            </label>
+            <div class="progress bg-primary mb-2">
+              <div class="progress-bar bg-success" role="progressbar" aria-valuenow={ getPercent(state.stats.calls.total, state.stats.calls.avg) } style={ `width:${getPercent(state.stats.calls.total, state.stats.calls.avg)}%` } aria-valuemin="0" aria-valuemax="100"></div>
             </div>
+            <!-- / total calls -->
 
+            <!-- total calls -->
+            <label class="form-label d-flex">
+              <b class="mr-2">{ new Date(state.stats.duration.total).toISOString().substr(11, 8) }</b>Duration (24h)
+              <span class="ml-auto">
+                <b class="mr-2">{ new Date(state.stats.duration.avg).toISOString().substr(11, 8) }</b>Avg
+              </span>
+            </label>
+            <div class="progress bg-primary">
+              <div class="progress-bar bg-success" role="progressbar" aria-valuenow={ getPercent(state.stats.duration.total, state.stats.duration.avg) } style={ `width:${getPercent(state.stats.duration.total, state.stats.duration.avg)}%` } aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+            <!-- / total calls -->
           </div>
+          
         </div>
-        <div class="column-body" if={ !props.page.get('data.type') || props.page.get('data.type') === 'list' }>
+        <div class="column-body">
           <div class="column-body-inner">
             <div class="card">
               <div class="card-body task-container">
-                <page-phone-task each={ (item, i) in state.items } item={ item } page={ props.page } form-fields={ props.context.fields } add-user={ props.adduser } add-tag={ props.addTag } on-item={ (e) => props.onItem(e, item) } on-click={ (e) => state.item && state.item.get('_id') === item.get('_id') ? props.onItem(e, item) : onClick(e, item) } class={ classes({ 'd-none' : !isVisible(item), 'active' : state.item && state.item.get('_id') === item.get('_id') }) } />
+                <page-phone-task each={ (item, i) in phone.items(props) } phone={ phone } item={ item } page={ props.page } form-fields={ props.context.fields } add-user={ props.addUser } add-tag={ props.addTag } on-item={ (e) => props.onItem(e, item) } on-click={ (e) => connection && connection.item && connection.item.get('_id') === item.get('_id') ? props.onItem(e, item) : onClick(e, item) } class={ classes({ 'active' : connection && connection.item && connection.item.get('_id') === item.get('_id') }) } />
               </div>
             </div>
           </div>
@@ -58,7 +58,7 @@
       <!-- / CHAT LIST -->
 
       <!-- CHAT BODY -->
-      <div class={ `col d-flex flex-column${ !props.page.get('data.type') || props.page.get('data.type') === 'list' ? ' ml-3' : ''}` } if={ loading('item') }>
+      <div class="col d-flex flex-column ml-3" if={ loading('item') }>
         <div class="mx-auto my-5">
           <i class="fa fa-spinner fa-spin h1" />
         </div>
@@ -66,56 +66,12 @@
       <!-- / CHAT BODY -->
 
       <!-- CHAT MAIN -->
-      <div class={ `col d-flex flex-column${ !props.page.get('data.type') || props.page.get('data.type') === 'list' ? ' ml-3' : ''}` } if={ state.item && !loading('item') }>
+      <div class="col d-flex flex-column ml-3" if={ connection && connection.item && !loading('item') }>
         <div class="row">
-          <div class="col-lg-5">
-
-            <div if={ props.page.get('data.type') === 'grid' } class="card mb-3">
-              <div class="card-body">
-                <h4 class="d-flex mb-3">
-                  Stats
-
-                  <div class="ml-auto">
-                    { (index + 1) } / { getTotal() }
-                  </div>
-                </h4>
-
-                <div class={ props.page.get('data.type') === 'grid' ? 'row' : '' }>
-                  <!-- total calls -->
-                  <div class={ props.page.get('data.type') === 'grid' ? 'col-6' : '' }>
-                    <label class="form-label d-flex">
-                      <b class="mr-2">{ state.stats.calls.total }</b>Calls (24h)
-                      <span class="ml-auto">
-                        <b class="mr-2">{ state.stats.calls.avg }</b>Avg
-                      </span>
-                    </label>
-                    <div class="progress bg-primary mb-2">
-                      <div class="progress-bar bg-success" role="progressbar" aria-valuenow={ getPercent(state.stats.calls.total, state.stats.calls.avg) } style={ `width:${getPercent(state.stats.calls.total, state.stats.calls.avg)}%` } aria-valuemin="0" aria-valuemax="100"></div>
-                    </div>
-                  </div>
-                  <!-- / total calls -->
-
-                  <!-- total calls -->
-                  <div class={ props.page.get('data.type') === 'grid' ? 'col-6' : '' }>
-                    <label class="form-label d-flex">
-                      <b class="mr-2">{ new Date(state.stats.duration.total).toISOString().substr(11, 8) }</b>Duration (24h)
-                      <span class="ml-auto">
-                        <b class="mr-2">{ new Date(state.stats.duration.avg).toISOString().substr(11, 8) }</b>Avg
-                      </span>
-                    </label>
-                    <div class="progress bg-primary">
-                      <div class="progress-bar bg-success" role="progressbar" aria-valuenow={ getPercent(state.stats.duration.total, state.stats.duration.avg) } style={ `width:${getPercent(state.stats.duration.total, state.stats.duration.avg)}%` } aria-valuemin="0" aria-valuemax="100"></div>
-                    </div>
-                  </div>
-                  <!-- / total calls -->
-                </div>
-
-              </div>
-            </div>
-
+          <div class={ `col-lg-5${props.display === 'grid' ? ' d-none' : ''}` }>
             <div class="card mb-3">
               <div class="card-body">
-                <hbs template={ props.page.get('data.view') || props.page.get('data.display') || '' } data={ state.item ? state.item.get() : {} } />
+                <hbs template={ props.page.get('data.view') || props.page.get('data.display') || '' } data={ connection && connection.item ? connection.item.get() : {} } />
               </div>
             </div>
             <div class="card" if={ getForm() }>
@@ -135,7 +91,7 @@
               </div>
 
               <div class="card-body">
-                <dashup-view ref={ ref('form') } view="form" type="page" struct="form" item={ state.item } preview={ true } page={ getForm() } on-data={ (k, v) => onData(k, v) } on-submit={ (e, d) => onSubmit(e, d) } { ...getProps(true) } />
+                <dashup-view ref={ ref('form') } view="form" type="page" struct="form" item={ connection && connection.item } preview={ true } page={ getForm() } on-data={ (k, v) => onData(k, v) } on-submit={ (e, d) => onSubmit(e, d) } { ...getProps(true) } />
               </div>
 
               <div class="card-footer text-right pt-0 pb-3">
@@ -148,7 +104,7 @@
               </div>
             </div>
           </div>
-          <div class="col-lg-7">
+          <div class="col">
             <div class="mb-3 d-flex justify-content-end">
               <button class={ `btn btn-primary ml-2${state.tab === 'note' ? ' active' : ''}` } onclick={ (e) => onTab(e, 'note') }>
                 <i class="fa fa-file mr-2" />
@@ -192,12 +148,13 @@
               </div>
             </div>
 
-            <page-phone-event each={ (event, i) in state.events } event={ event } field={ (name) => getField(name) } { ...getProps() } />
+            <page-phone-event each={ (event, i) in state.events } event={ event } phone={ phone } { ...getProps() } />
           </div>
         </div>
       </div>
       <!-- / CHAT MAIN -->
     </div>
+    <!-- / LIST VIEW -->
   </div>
 
   <script>
@@ -208,6 +165,7 @@
     import { Device } from 'twilio-client';
 
     // chat page task
+    import Phone from '../../js/phone.ts';
     import pagePhoneTask from './task.riot';
     import pagePhoneEvent from './event.riot';
 
@@ -239,6 +197,9 @@
         // check frontend
         if (typeof window === 'undefined') return;
 
+        // mixins
+        Phone(this);
+
         // safe update
         this.safeUpdate = () => {
           this.update();
@@ -259,7 +220,8 @@
         // bind
         this.init         = this.init.bind(this);
         this.onClick      = this.onClick.bind(this);
-        this.getStats     = this.getStats.bind(this);
+        this.loadItem     = this.loadItem.bind(this);
+        this.loadStats    = this.loadStats.bind(this);
         this.getFieldType = this.getFieldType.bind(this);
 
         // listeners
@@ -267,6 +229,9 @@
         this.props.page.on('data.view', this.safeUpdate);
         this.props.page.on('data.forms', this.safeUpdate);
         this.props.page.on('data.display', this.safeUpdate);
+
+        // on item
+        this.phone.on('item', this.loadItem);
       }
       
       /**
@@ -313,27 +278,24 @@
         this.props.page.removeListener('data.forms', this.safeUpdate);
         this.props.page.removeListener('data.display', this.safeUpdate);
 
+        // on item
+        this.phone.removeListener('item', this.loadItem);
+
         // client
-        if (this.statusInterval) {
-          clearInterval(this.statusInterval);
-        }
-        if (this.callInterval) {
-          clearInterval(this.callInterval);
-        }
-        if (this.statsInterval) {
-          clearInterval(this.statsInterval);
+        if (this.__stats) {
+          clearInterval(this.__stats);
         }
 
         // disconnect
-        if (this.props.connection) {
-          this.props.connection.disconnect();
+        if (this.connection && this.connection.conn) {
+          this.connection.conn.disconnect();
         }
 
         // items
-        if (this.state.items && this.state.items.removeListener) {
+        if (this.props.items && this.props.items.removeListener) {
           // safe update
-          this.state.items.removeListener('update', this.safeUpdate);
-          this.state.items.deafen();
+          this.props.items.removeListener('update', this.safeUpdate);
+          this.props.items.deafen();
         }
         if (this.state.events && this.state.events.removeListener) {
           // safe update
@@ -385,72 +347,35 @@
         // get form
         return this.props.dashup.page(this.state.form || this.props.page.get('data.forms')[0]);
       }
-      
+
       /**
-       * is filter me
+       * get field
        */
-      isFilter(type, val) {
-        // check me
-        return ((this.props.page.get('user.filter') || {})[type] || false) === val;
+      getFieldType({ type }) {
+        // return field
+        return this.props.fields.find((f) => f.type === type);
       }
 
       /**
-       * check visible
+       * get total
        */
-      isVisible(task) {
-        // tags
-        const tags = this.props.search && this.props.search.length ? this.props.search.toLowerCase().split(' ') : [];
+      getTotal() {
+        // return count
+        return dotProp.get(this, 'refs.grid.refs.body.state.count') || 0;
+      }
 
-        // check filter
-        if (this.isFilter('me', true)) {
-          // check vals
-          const userField = this.props.context.fields.find((f) => f.uuid === this.props.page.get('data.user'));
+      /**
+       * get difference
+       */
+      getPercent(a, b) {
+        // value
+        const total = (a / b) * 100;
 
-          // get vals
-          let vals = task.get(userField ? userField.name || userField.uuid : 'null') || [];
+        // total
+        if (total > 100) return '100.00';
 
-          // vals
-          if (vals && !Array.isArray(vals)) vals = [vals];
-
-          // only me
-          if (!vals.find((val) => {
-            // user
-            return val.user === this.props.me.get('id');
-          })) return false;
-        }
-
-        // check tags
-        if ((this.props.page.get('user.filter.tags') || []).length) {
-          // check vals
-          const tagField = this.props.context.fields.find((f) => f.uuid === this.props.page.get('data.tag'));
-
-          // check filter
-          if (this.props.page.get('user.filter.tags').find((tag) => {
-            // check tag exists on task
-            let val = task.get(tagField ? tagField.name || tagField.uuid : 'null') || [];
-
-            // set value
-            if (typeof val === 'string') val = [val];
-
-            // check tag
-            return !val.includes(tag);
-          })) return false;
-        }
-
-        // filter
-        if (tags.length) {
-          // search item
-          const searchable = JSON.stringify(task.get()).toLowerCase();
-
-          // search JSON
-          if (tags.find((tag) => {
-            // check
-            return !searchable.includes(tag);
-          })) return false;
-        }
-
-        // return true
-        return true;
+        // return total
+        return total.toFixed(2);
       }
 
 
@@ -477,6 +402,20 @@
       }
 
       /**
+       * create call
+       */
+      onCall(e) {
+        // prevent default
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+
+        // create call
+        this.phone.start(this.props, this.connection.item);
+      }
+
+      /**
        * on send
        */
       async onSMS(e) {
@@ -493,32 +432,8 @@
         // loading
         this.loading('sms', true);
 
-        // get number
-        const numberField = this.props.context.fields.find((f) => f.uuid === this.props.page.get('data.field.phone'));
-
-        // check number
-        if (!numberField) return;
-
-        // get number
-        const number = this.state.item.get(numberField.name || numberField.uuid);
-
-        // send from/to
-        await this.props.page.action('send', {
-          body,
-          to   : number,
-          from : this.props.number,
-        });
-
-        // add event
-        await this.addEvent({
-          body,
-          to    : number,
-          from  : this.props.number,
-          type  : 'sms:outbound',
-          item  : this.state.item.get('_id'),
-          time  : new Date(),
-          title : `Sent SMS To ${number}`,
-        });
+        // create call
+        await this.phone.sms(this.props, this.connection.item, body);
 
         // loading
         this.loading('sms', false);
@@ -542,10 +457,10 @@
         this.loading('note', true);
 
         // add event
-        await this.addEvent({
+        await this.phone.event(this.props, {
           body,
           type  : 'note',
-          item  : this.state.item.get('_id'),
+          item  : this.connection.item.get('_id'),
           time  : new Date(),
           title : 'Added Note',
         });
@@ -557,194 +472,15 @@
       /**
        * on click
        */
-      async onClick(e, item) {
+      onClick(e, item) {
         // prevent default
         if (e) {
           e.preventDefault();
           e.stopPropagation();
         }
 
-        // itemField
-        const itemField = this.getField('item');
-  
-        // loading chat
-        this.loading('item', true);
-
-        // items
-        if (this.state.events && this.state.events.removeListener) {
-          // safe update
-          this.state.events.removeListener('update', this.safeUpdate);
-          this.state.events.deafen();
-        }
-
-        // get model
-        let events = [];
-        const model = this.props.page.get('data.event.model');
-
-        // get model
-        if (model && itemField) {
-          // load events
-          const modelPage = this.props.dashup.page(model);
-
-          // load events
-          events = await modelPage.where({
-            [itemField.name || itemField.uuid] : item.get('_id'),
-          }).sort('created_at', -1).limit(25).listen();
-
-          // on update
-          events.on('update', this.safeUpdate);
-        }
-
-        // update state
-        this.update({
-          item,
-          events,
-        });
-        this.loading('item', false);
-      }
-
-      /**
-       * on call
-       */
-      async onCall(e, incoming) {
-        // prevent default
-        if (e) {
-          e.preventDefault();
-          e.stopPropagation();
-        }
-
-        // check state
-        if (!incoming && !this.state.item) return;
-        if (!this.props.number) {
-          // error
-          return eden.alert.error('Please purchase or select a number to initalize calls');
-        }
-
-        // get number
-        const numberField = this.props.context.fields.find((f) => f.uuid === this.props.page.get('data.field.phone'));
-
-        // check number
-        if (!numberField) return;
-        
-        // set query
-        let query = this.props.dashup.page(this.props.page.get('data.model'));
-
-        // check items
-        if (this.props.page.get('data.forms')) {
-          // loop forms
-          query = query.in('_meta.form', this.props.page.get('data.forms'));
-        }
-
-        // find or create number
-        const item = incoming ? (await query.where({
-          [numberField.name || numberField.uuid] : incoming,
-        }).findOne() || await this.props.dashup.page(this.props.page.get('data.model')).create({
-          [numberField.name || numberField.uuid] : incoming,
-        })) : this.state.item;
-
-        // update item
-        if (!this.state.item || incoming) this.onClick(null, item);
-
-        // get number
-        const number = item.get(numberField.name || numberField.uuid);
-
-        // update call
-        this.props.props({
-          call : {
-            to     : number,
-            from   : this.props.number,
-            start  : new Date(),
-            muted  : false,
-            status : 'connecting',
-          },
-          connection : this.props.connection || this.device.connect({
-            to       : number,
-            item     : item.get('_id'),
-            from     : this.props.number,
-            page     : this.props.page.get('_id'),
-            agent    : (eden ? eden.user.get('_id') : 'Anonymous'),
-            member   : this.props.dashup.get('_meta.member'),
-            dashup   : this.props.dashup.get('_id'),
-            location : this.props.dashup.get('_id'),
-          }),
-        });
-
-        // call
-        const actualCall = await this.addEvent({
-          to    : number,
-          from  : this.props.number,
-          time  : new Date(),
-          type  : `call:${incoming ? 'inbound' : 'outbound'}`,
-          item  : item.get('_id'),
-          title : `${incoming ? 'Call From' : 'Called'} ${number}`,
-        });
-
-        // interval
-        this.callInterval = setInterval(() => {
-          // set status
-          if (this.props.call && this.props.call.status !== this.props.connection.status()) {
-            // set status
-            this.props.props({
-              call : {
-                ...(this.props.call),
-
-                status : this.props.connection.status(),
-              },
-            });
-          }
-        }, 1000);
-
-        // on disconnect
-        this.props.connection.on('disconnect', async () => {
-          // call null
-          this.props.props({
-            call       : null,
-            connection : null,
-          });
-
-          // time field
-          const timeField = this.getField('time');
-
-          // set and save
-          actualCall.set('duration', (new Date().getTime() - new Date(actualCall.get(timeField.name || timeField.uuid)).getTime()));
-          actualCall.save();
-          
-          // clear interval
-          if (this.callInterval) clearInterval(this.callInterval);
-
-          // check dialling
-          if (this.props.dialling && !this.props.paused) {
-            // index
-            this.index = this.index + 1;
-
-            // set item
-            const item = dotProp.get(this, `refs.grid.refs.body.state.items.${this.index}`);
-
-            // check item
-            if (!item) {
-              // finish dialling
-              return this.props.props({
-                dialling : false,
-              });
-            }
-
-            // on click
-            await this.onClick(null, item);
-            this.onCall();
-          }
-        });
-
-        // on disconnect
-        this.props.connection.on('mute', (muted) => {
-          // call null
-          this.props.props({
-            call : {
-              ...(this.props.call),
-
-              muted,
-            },
-          });
-        });
+        // do item
+        this.phone.item(this.props, item);
       }
 
       /**
@@ -752,7 +488,7 @@
        */
       onData(field, value) {
         // set value
-        this.state.item.set(field.name || field.uuid, value);
+        this.connection.item.set(field.name || field.uuid, value);
 
         // update
         this.update();
@@ -809,187 +545,6 @@
         this.loading('submit', false);
       }
 
-      /**
-       * add event
-       */
-      async addEvent({ _id, title, from, to, type, item, body, time, duration }) {
-        // get fields
-        const fields = this.getFields();
-
-        // get fields
-        const toField = this.getField('to', fields) || {};
-        const typeField = this.getField('type', fields) || {};
-        const itemField = this.getField('item', fields) || {};
-        const bodyField = this.getField('body', fields) || {};
-        const timeField = this.getField('time', fields) || {};
-        const userField = this.getField('user', fields) || {};
-        const fromField = this.getField('from', fields) || {};
-        const titleField = this.getField('title', fields) || {};
-        const durationField = this.getField('duration', fields) || {};
-
-        // create event
-        const newEvent = await this.props.dashup.action({
-          type   : 'page',
-          page   : this.props.page.get('data.event.form'),
-          form   : this.props.page.get('data.event.form'),
-          model  : this.props.page.get('data.event.model'),
-          struct : 'form',
-        }, 'form.submit', {
-          _id,
-
-          [toField.name || toField.uuid] : to,
-          [fromField.name || fromField.uuid] : from,
-          [itemField.name || itemField.uuid] : item,
-          [userField.name || userField.uuid] : this.props.dashup.get('_meta.member'),
-          [typeField.name || typeField.uuid] : type,
-          [bodyField.name || bodyField.uuid] : body,
-          [timeField.name || timeField.uuid] : time,
-          [titleField.name || titleField.uuid] : title,
-          [durationField.name || durationField.uuid] : duration,
-        });
-
-        // event
-        if (newEvent && typeof newEvent !== this.props.dashup.Model) {
-          // return model
-          return new this.props.dashup.Model(newEvent, this.props.dashup);
-        }
-
-        // return event
-        return newEvent;
-      }
-
-      /**
-       * get field
-       */
-      getField(name, fields) {
-        // return value
-        return [...(fields || this.getFields())].find((field) => {
-          // return fields
-          return field.uuid === this.props.page.get(`data.event.${name}`);
-        });
-      }
-
-      /**
-       * get field
-       */
-      getFieldType({ type }) {
-        // return field
-        return this.props.fields.find((f) => f.type === type);
-      }
-
-      /**
-       * get total
-       */
-      getTotal() {
-        // return count
-        return dotProp.get(this, 'refs.grid.refs.body.state.count') || 0;
-      }
-
-      /**
-       * get fields
-       */
-      getFields() {
-        // reduce
-        this.state.fields = this.state.fields || [this.props.page.get('data.event.form')].filter((i) => i).reduce((accum, id) => {
-          // get page
-          const page = this.props.dashup.page(id);
-
-          // check page
-          if (!page || !page.get('data.fields')) return accum;
-
-          // loop fields
-          accum.push(...page.get('data.fields').map((f) => {
-            // return field
-            return {
-              ...f,
-
-              form : page.get('_id'),
-            };
-          }));
-
-          // return accum
-          return accum;
-        }, []);
-
-        // return fields
-        return this.state.fields;
-      }
-
-      /**
-       * get stats
-       */
-      async getStats() {
-        // get event model
-        const eventModel = this.props.page.get('data.event.model');
-
-        // get fields
-        const fields = this.getFields();
-
-        // event model
-        if (!eventModel) return;
-
-        // yesterday
-        const yesterday = moment().subtract(1, 'day').toDate();
-
-        // fields
-        const typeField = this.getField('type', fields);
-        const timeField = this.getField('time', fields);
-        const userField = this.getField('user', fields);
-        const durationField = this.getField('duration', fields);
-
-        // page
-        const eventPage = this.props.dashup.page(eventModel);
-
-        // update
-        this.update({
-          stats : {
-            calls : {
-              avg : await eventPage.gt(timeField.name || timeField.uuid, yesterday).or({
-                [typeField.name || typeField.uuid] : 'call:outbound',
-              }, {
-                [typeField.name || typeField.uuid] : 'call:inbound',
-              }).avg(null, userField.name || userField.uuid),
-              total : await eventPage.gt(timeField.name || timeField.uuid, yesterday).where({
-                [userField.name || userField.uuid] : this.props.dashup.get('_meta.member'),
-              }).or({
-                [typeField.name || typeField.uuid] : 'call:outbound',
-              }, {
-                [typeField.name || typeField.uuid] : 'call:inbound',
-              }).count(),
-            },
-            duration : {
-              avg : await eventPage.gt(timeField.name || timeField.uuid, yesterday)
-                .gt(durationField.name || durationField.uuid, 0).or({
-                [typeField.name || typeField.uuid] : 'call:outbound',
-              }, {
-                [typeField.name || typeField.uuid] : 'call:inbound',
-              }).avg(durationField.name || durationField.uuid, userField.name || userField.uuid),
-              total : await eventPage.gt(timeField.name || timeField.uuid, yesterday).where({
-                [userField.name || userField.uuid] : this.props.dashup.get('_meta.member'),
-              }).gt(durationField.name || durationField.uuid, 0).or({
-                [typeField.name || typeField.uuid] : 'call:outbound',
-              }, {
-                [typeField.name || typeField.uuid] : 'call:inbound',
-              }).sum(durationField.name || durationField.uuid),
-            }
-          },
-        });
-      }
-
-      /**
-       * get difference
-       */
-      getPercent(a, b) {
-        // value
-        const total = (a / b) * 100;
-
-        // total
-        if (total > 100) return '100.00';
-
-        // return total
-        return total.toFixed(2);
-      }
-
 
       // ////////////////////////////////////////////////////////////////////////////
       //
@@ -1002,10 +557,10 @@
        */
       async init() {
         // items
-        if (this.state.items && this.state.items.removeListener) {
+        if (this.props.items && this.props.items.removeListener) {
           // safe update
-          this.state.items.removeListener('update', this.safeUpdate);
-          this.state.items.deafen();
+          this.props.items.removeListener('update', this.safeUpdate);
+          this.props.items.deafen();
         }
 
         // get model
@@ -1050,98 +605,70 @@
           items = await query.listen();
         }
 
+        // get initial stats
+        this.loadStats();
+
+        // load stats
+        this.__stats = setInterval(this.loadStats, 5 * 1000);
+
         // update
-        const { token } = await this.props.page.action('auth');
-
-        // setup device
-        this.device = new Device();
-
-        // setup
-        this.device.setup(token, {
-          debug : true,
-        });
-
-        // setup
-        this.device.incoming((conn) => {
-          // update call
-          this.props.props({
-            call : {
-              to     : conn.parameters.From,
-              from   : conn.parameters.To,
-              type   : 'incoming',
-              start  : new Date(),
-              muted  : false,
-              status : 'calling',
-            },
-            connection : conn,
-          });
-        });
-
-        // interval
         this.props.props({
-          end : async () => {
-            // disconnect
-            return this.props.connection ? await this.props.connection.disconnect() : null;
-          },
-          begin : async (resume) => {
-            // set index
-            this.index = resume ? this.index : 0;
-
-            // begin
-            await this.onClick(null, dotProp.get(this, `refs.grid.refs.body.state.items.${this.index}`));
-            this.onCall();
-          },
-          next : async () => {
-            // disconnect
-            if (this.props.connection) {
-              // disconnect
-              await this.props.connection.disconnect();
-            } else {
-              // set index
-              this.index = this.index + 1;
-
-              // check item
-              const item = dotProp.get(this, `refs.grid.refs.body.state.items.${this.index}`);
-
-              // check item
-              if (!item) {
-                // finish dialling
-                return this.props.props({
-                  dialling : false,
-                });
-              }
-
-              // begin
-              await this.onClick(null, item);
-            }
-          },
-          accept : (number) => {
-            // on call
-            this.onCall(null, number);
-          },
-          device : this.device,
-        });
-        this.statusInterval = setInterval(() => {
-          // set status
-          if (this.props.status !== this.device.status()) {
-            // set status
-            this.props.props({
-              status : this.device.status(),
-            });
-          }
-        }, 1000);
-
-        // create stats interval
-        this.statsInterval = setInterval(this.getStats, 5 * 1000);
-        this.getStats();
-
-        // update
-        this.update({
           items,
         });
 
         // safe update
         if (items && items.on) items.on('update', this.safeUpdate);
+      }
+
+      /**
+       * get stats
+       */
+      async loadStats() {
+        // load stats
+        this.update(await this.phone.stats(this.props));
+      }
+
+      /**
+       * load item
+       */
+      async loadItem(item) {
+        // itemField
+        const fields = this.phone.fields(this.props);
+        const itemField = this.phone.field(this.props, 'item', fields);
+  
+        // loading chat
+        this.loading('item', true);
+
+        // items
+        if (this.state.events && this.state.events.removeListener) {
+          // safe update
+          this.state.events.removeListener('update', this.safeUpdate);
+          this.state.events.deafen();
+        }
+
+        // get model
+        let events = [];
+        const model = this.props.page.get('data.event.model');
+
+        // get model
+        if (model && itemField) {
+          // load events
+          const modelPage = this.props.dashup.page(model);
+
+          // load events
+          events = await modelPage.where({
+            [itemField.name || itemField.uuid] : item.get('_id'),
+          }).sort('created_at', -1).limit(25).listen();
+
+          // on update
+          events.on('update', this.safeUpdate);
+        }
+
+        // update state
+        this.update({
+          events,
+        });
+        this.loading('item', false);
       }
 
 

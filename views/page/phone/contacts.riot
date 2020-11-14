@@ -12,24 +12,9 @@
       </label>
       <eden-select on-change={ (e, val) => onForms(val) } ref={ ref('forms') } placeholder="Select Form(s)" multiple={ true } data={ getForms() } />
     </div>
-    <div class="mb-3">
-      <label class="form-label">
-        Contact Display
-      </label>
-      <eden-select on-change={ (e, val) => onType(val) } ref={ ref('type') } placeholder="Select View" data={ getType() } />
-    </div>
 
     <div if={ !loading('model') && !loading('form') && props.page.get('data.forms.0') }>
       <hr />
-        
-      <div class="mb-3">
-        <div class="form-check form-switch">
-          <input class="form-check-input" id="is-required" type="checkbox" onchange={ (e) => onEnableFilter(e) } { ...getProps({ checked : props.page.get('data.enableFilter') }) }>
-          <label class="form-check-label" for="is-required">
-            Filter enabled
-          </label>
-        </div>
-      </div>
       
       <div class="mb-3" each={ (field, i) in fields }>
         <label class="form-label">
@@ -252,25 +237,6 @@
         this.props.data('filter', JSON.stringify(val));
       }
 
-      /**
-       * on model
-       */
-      onEnableFilter(e) {
-        // get value
-        const val = $(e.target).is(':checked');
-        
-        // set model
-        this.props.data('enableFilter', val);
-      }
-
-      /**
-       * on color
-       */
-      onType(val) {
-        // set color
-        this.props.data('type', val);
-      }
-
 
       // ////////////////////////////////////////////////////////////////////////////
       //
@@ -292,21 +258,6 @@
             name     : page.get('name'),
             value    : page.get('_id'),
             selected : this.props.page.get('data.model') === page.get('_id'),
-          };
-        });
-      }
-
-      /**
-       * get value
-       */
-      getType() {
-        // return value
-        return [['Contact List', 'list'], ['Contact Grid', 'grid']].map(([label, type]) => {
-          // return type
-          return {
-            name     : label,
-            value    : type,
-            selected : (this.props.page.get('data.type') || 'list') === type,
           };
         });
       }
