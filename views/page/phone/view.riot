@@ -6,8 +6,8 @@
     <div class="row g-0 flex-1">
 
       <!-- GRID VIEW -->
-      <div if={ props.page.get('data.forms.0') } class={ `col-lg-6 dashup-grid${props.display !== 'grid' ? ' d-none' : ''}` }>
-        <dashup-view view="grid" type="page" struct="grid" active={ connection && connection.item ? [connection.item] : [] } ref={ ref('grid') } rows={ phone.items(props) } no-pagination={ true } fields={ props.context.fields } get-field={ getFieldType } { ...getProps() } />
+      <div if={ !loading('items') && props.page.get('data.forms.0') } class={ `col-lg-6 dashup-grid${props.display !== 'grid' ? ' d-none' : ''}` }>
+        <dashup-view view="grid" type="page" struct="grid" active={ connection && connection.item ? [connection.item] : [] } ref={ ref('grid') } rows={ (limit, skip) => phone.items(props, limit, skip) } count={ phone.items(props, 9999999).length } fields={ props.context.fields } get-field={ getFieldType } { ...getProps() } />
       </div>
       <!-- / GRID VIEW -->
 
@@ -48,8 +48,11 @@
         <div class="column-body">
           <div class="column-body-inner">
             <div class="card">
-              <div class="card-body task-container">
-                <page-phone-task each={ (item, i) in phone.items(props) } phone={ phone } item={ item } page={ props.page } form-fields={ props.context.fields } add-user={ props.addUser } add-tag={ props.addTag } on-item={ (e) => props.onItem(e, item) } on-click={ (e) => connection && connection.item && connection.item.get('_id') === item.get('_id') ? props.onItem(e, item) : onClick(e, item) } class={ classes({ 'active' : connection && connection.item && connection.item.get('_id') === item.get('_id') }) } />
+              <div if={ loading('items') } class="card-body text-center">
+                <i class="fa fa-spinner fa-spin h1" />
+              </div>
+              <div if={ !loading('items') } class="card-body task-container">
+                <page-phone-task each={ (item, i) in phone.items(props, state.limit) } phone={ phone } item={ item } page={ props.page } form-fields={ props.context.fields } add-user={ props.addUser } add-tag={ props.addTag } on-item={ (e) => props.onItem(e, item) } on-click={ (e) => connection && connection.item && connection.item.get('_id') === item.get('_id') ? props.onItem(e, item) : onClick(e, item) } class={ classes({ 'active' : connection && connection.item && connection.item.get('_id') === item.get('_id') }) } />
               </div>
             </div>
           </div>
@@ -216,9 +219,11 @@
             total : 0,
           },
         };
+        this.state.limit = 25;
 
         // bind
         this.init         = this.init.bind(this);
+        this.onMore       = this.onMore.bind(this);
         this.onClick      = this.onClick.bind(this);
         this.loadItem     = this.loadItem.bind(this);
         this.loadStats    = this.loadStats.bind(this);
@@ -226,6 +231,7 @@
 
         // listeners
         this.props.page.on('reload', this.safeUpdate);
+        this.props.page.on('do.filter', this.init);
         this.props.page.on('data.view', this.safeUpdate);
         this.props.page.on('data.forms', this.safeUpdate);
         this.props.page.on('data.display', this.safeUpdate);
@@ -262,6 +268,9 @@
           this.ps = new PerfectScrollbar(this.$('.task-container'), {
             suppressScrollX : true,
           });
+
+          // on more
+          this.$('.task-container').addEventListener('ps-y-reach-end', this.onMore);
         }
       }
 
@@ -274,12 +283,16 @@
 
         // listeners
         this.props.page.removeListener('reload', this.safeUpdate);
+        this.props.page.removeListener('do.filter', this.init);
         this.props.page.removeListener('data.view', this.safeUpdate);
         this.props.page.removeListener('data.forms', this.safeUpdate);
         this.props.page.removeListener('data.display', this.safeUpdate);
 
         // on item
         this.phone.removeListener('item', this.loadItem);
+
+        // on more
+        if (this.$('.task-container')) this.$('.task-container').removeListener('ps-y-reach-end', this.onMore);
 
         // client
         if (this.__stats) {
@@ -399,6 +412,21 @@
         this.update({
           tab : this.state.tab === tab ? null : tab,
         });
+      }
+
+      /**
+       * on more
+       */
+      onMore() {
+        // get items
+        if (this.phone.items(this.props, 999999999).length > this.state.limit) {
+          // update
+          this.update({
+            limit : this.state.limit + 25,
+          });
+
+          console.log(this.state.limit);
+        }
       }
 
       /**
@@ -556,6 +584,9 @@
        * init
        */
       async init() {
+        // loading
+        this.loading('items', true);
+
         // items
         if (this.props.items && this.props.items.removeListener) {
           // safe update
@@ -601,23 +632,55 @@
             query = query[where[0]](where[1], where[2]);
           });
 
+          // test by user
+          if ((this.props.page.get('user.filter') || {}).me) {
+            // get user fields
+            const userFields = [...(this.props.context.fields)].filter((f) => (this.props.page.get('data.user') || []).includes(f.uuid));
+
+            // loop fields
+            query = query[userFields.length > 1 ? 'or' : 'where'](...(userFields.map((userField) => {
+              // return or
+              return {
+                [userField.name || userField.uuid] : this.props.dashup.get('_meta.member'),
+              };
+            })));
+          }
+
+          // get filter tags
+          if ((this.props.page.get('user.filter.tags') || []).length) {
+            // check vals
+            const tagFields = [...(this.props.context.fields)].filter((f) => (this.props.page.get('data.tag') || []).includes(f.uuid));
+
+            // loop fields
+            query = query[tagFields.length > 1 ? 'or' : 'where'](...(tagFields.map((tagField) => {
+              // return or
+              return {
+                [tagField.name || tagField.uuid] : this.props.page.get('user.filter.tags')
+              };
+            })));
+          }
+
           // listen
           items = await query.listen();
         }
 
         // get initial stats
-        this.loadStats();
+        if (!this.__stats) {
+          // stats
+          this.loadStats();
 
-        // load stats
-        this.__stats = setInterval(this.loadStats, 5 * 1000);
+          // load stats
+          this.__stats = setInterval(this.loadStats, 5 * 1000);
+        }
 
         // update
-        this.props.props({
-          items,
-        });
+        this.phone.items(this.props, items);
 
         // safe update
         if (items && items.on) items.on('update', this.safeUpdate);
+
+        // loading
+        this.loading('items', false);
       }
 
       /**

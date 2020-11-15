@@ -62,7 +62,7 @@
       </button>
       <button if={ connection.dialer } class="btn btn-primary">
         { ucfirst(connection.dialer.status) } - 
-        { connection.dialer.dialled.length } of { phone.items(props).length }
+        { connection.dialer.dialled.length } of { phone.items(props, 999999999).length }
       </button>
       <button if={ connection.dialer && connection.dialer.status === 'dialing' } class="btn btn-info" onclick={ (e) => onNext(e) }>
         <i class="fa fa-forward" />

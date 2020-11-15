@@ -578,16 +578,32 @@ class PhoneModule extends EventEmitter {
    *
    * @param props 
    */
-  items(props) {
+  items(props, items, skip = 0) {
+    // connection
+    const conn = this.connections.get(props.page.get('_id'));
+
+    // set items
+    if (Array.isArray(items)) {
+      // set items
+      conn.items = items;
+      return this.emit('update');
+    }
+
+    // return sorted
+    const filtered = [...((conn.items || []).filter((item) => {
+      // return filter
+      return this.filter(props, item);
+    }))];
+    
+    // check sort
+    if (items === true) return filtered;
+
     // get column field
     const fields = props.context.fields || [];
     const sort = fields.find((f) => f.uuid === props.page.get('data.sort.id'));
-
+    
     // return sorted
-    return (props.items || []).filter((item) => {
-      // return filter
-      return this.filter(props, item);
-    }).sort((a, b) => {
+    const sorted = filtered.sort((a, b) => {
       // sort order
       let aC = a.get(sort ? (sort.name || sort.uuid) : `_meta.created`) || 0;
       let bC = b.get(sort ? (sort.name || sort.uuid) : `_meta.created`) || 0;
@@ -619,6 +635,9 @@ class PhoneModule extends EventEmitter {
       if (bC < aC) return 1;
       return 0;
     });
+
+    // return sorted
+    return sorted.slice(skip, (typeof items === 'number' ? items : 25) + skip);
   }
 
   /**
@@ -630,60 +649,6 @@ class PhoneModule extends EventEmitter {
   filter(props, task) {
     // tags
     const tags = props.search && props.search.length ? props.search.toLowerCase().split(' ') : [];
-
-    // check filter
-    if (((props.page.get('user.filter') || {}).me || false)) {
-      // check vals
-      const userFields = [...(props.context.fields)].filter((f) => (props.page.get('data.user') || []).includes(f.uuid));
-
-      // get vals
-      let vals = userFields.reduce((accum, userField) => {
-        // val
-        let val = task.get(userField ? userField.name || userField.uuid : 'null') || [];
-
-        // vals
-        if (val && !Array.isArray(val)) val = [val];
-
-        // push
-        accum.push(...val);
-
-        // return accum
-        return accum;
-      }, []);
-
-      // only me
-      if (!vals.find((val) => {
-        // user
-        return val.user === props.me.get('id');
-      })) return false;
-    }
-
-    // check tags
-    if ((props.page.get('user.filter.tags') || []).length) {
-      // check vals
-      const tagFields = [...(props.context.fields)].filter((f) => (props.page.get('data.tag') || []).includes(f.uuid));
-
-      // check filter
-      if (props.page.get('user.filter.tags').find((tag) => {
-        // check tag exists on task
-        const vals = tagFields.reduce((accum, tagField) => {
-          // val
-          let val = task.get(tagField ? tagField.name || tagField.uuid : 'null') || [];
-
-          // vals
-          if (val && !Array.isArray(val)) val = [val];
-
-          // push
-          accum.push(...val);
-
-          // return accum
-          return accum;
-        }, []);
-
-        // check tag
-        return !vals.includes(tag);
-      })) return false;
-    }
 
     // filter
     if (tags.length) {
