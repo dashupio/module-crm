@@ -25,9 +25,19 @@
         
       <div class="mb-3">
         <label class="form-label">
-          Tag Field
+          Status Field(s)
         </label>
-        <eden-select on-change={ (e, val) => onTag(val) } ref={ ref('tag') } placeholder="Select Tag Field" data={ getTag() } multiple={ true } />
+        <eden-select on-change={ (e, val) => onStatus(val) } ref={ ref('status') } placeholder="Select Status Field" data={ getStatus() } multiple={ true } />
+        <small>
+          Status available after calling
+        </small>
+      </div>
+        
+      <div class="mb-3">
+        <label class="form-label">
+          Tag Field(s)
+        </label>
+        <eden-select on-change={ (e, val) => onTags(val) } ref={ ref('tag') } placeholder="Select Tag Field" data={ getTags() } multiple={ true } />
         <small>
           Selecting a tag field will allow you to tag tasks.
         </small>
@@ -35,9 +45,9 @@
         
       <div class="mb-3">
         <label class="form-label">
-          User Field
+          User Field(s)
         </label>
-        <eden-select on-change={ (e, val) => onUser(val) } ref={ ref('user') } placeholder="Select User Field" data={ getUser() } multiple={ true } />
+        <eden-select on-change={ (e, val) => onUsers(val) } ref={ ref('user') } placeholder="Select User Field" data={ getUsers() } multiple={ true } />
         <small>
           Selecting a user field will allow you to assign tasks to that user.
         </small>
@@ -186,7 +196,7 @@
       /**
        * on model
        */
-      async onTag(id) {
+      onTags(id) {
         // get value
         if (!id) id = this.refs.tag.val();
 
@@ -200,7 +210,7 @@
       /**
        * on model
        */
-      async onUser(id) {
+      onUsers(id) {
         // get value
         if (!id) id = this.refs.user.val();
 
@@ -209,6 +219,20 @@
         
         // set model
         this.props.data('user', id);
+      }
+
+      /**
+       * on model
+       */
+      onStatus(id) {
+        // get value
+        if (!id) id = this.refs.status.val();
+
+        // model
+        if (!id || !id.length) return;
+        
+        // set model
+        this.props.data('status', id);
       }
 
       /**
@@ -301,9 +325,24 @@
       /**
        * get field
        */
-      getTag() {
+      getStatus() {
         // return value
-        return this.props.context.fields.map((field) => {
+        return [...(this.props.context.fields)].filter((field) => ['select', 'checkbox'].includes(field.type)).map((field) => {
+          // return fields
+          return {
+            name     : field.label || field.name,
+            value    : field.uuid,
+            selected : (this.props.page.get('data.status') || []).includes(field.uuid),
+          };
+        });
+      }
+
+      /**
+       * get field
+       */
+      getTags() {
+        // return value
+        return [...(this.props.context.fields)].filter((field) => ['select', 'checkbox'].includes(field.type)).map((field) => {
           // return fields
           return {
             name     : field.label || field.name,
@@ -316,9 +355,9 @@
       /**
        * get field
        */
-      getUser() {
+      getUsers() {
         // return value
-        return this.props.context.fields.map((field) => {
+        return [...(this.props.context.fields)].filter((field) => ['user'].includes(field.type)).map((field) => {
           // return fields
           return {
             name     : field.label || field.name,

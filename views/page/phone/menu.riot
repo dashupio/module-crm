@@ -84,7 +84,7 @@
 
     <!-- DISPLAY -->
     <button class="mr-2 btn btn-primary" onclick={ (e) => onDisplay(e) }>
-      <i class={ `fa fa-${props.display === 'grid' ? 'columns' : 'th'}` } />
+      <i class={ `fa fa-${props.page.get('user.display') === 'grid' ? 'columns' : 'th'}` } />
     </button>
     <!-- / DISPLAY -->
     
@@ -206,9 +206,7 @@
        */
       onDisplay(e) {
         // update
-        this.props.props({
-          display : this.props.display === 'grid' ? 'list' : 'grid',
-        });
+        this.props.user('display', this.props.page.get('user.display') === 'grid' ? 'list' : 'grid');
       }
 
       /**

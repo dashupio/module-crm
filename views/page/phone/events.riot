@@ -21,6 +21,16 @@
         </label>
         <eden-select on-change={ (e, value) => onField(field.name, value) } ref={ ref(field.name) } placeholder={ `Select ${field.label}` } data={ getField(field.name, field.type) } />
       </div>
+        
+      <div class="mb-3">
+        <label class="form-label">
+          Status Field(s)
+        </label>
+        <eden-select on-change={ (e, val) => onStatus(val) } ref={ ref('status') } placeholder="Select Status Field" data={ getStatus() } multiple={ true } />
+        <small>
+          Status available after calling
+        </small>
+      </div>
     </div>
   </div>
 
@@ -167,6 +177,20 @@
         this.props.data('event', data);
       }
 
+      /**
+       * on model
+       */
+      onStatus(id) {
+        // get value
+        if (!id) id = this.refs.status.val();
+
+        // model
+        if (!id || !id.length) return;
+        
+        // set model
+        this.props.data('event.status', id);
+      }
+
 
       // ////////////////////////////////////////////////////////////////////////////
       //
@@ -224,6 +248,21 @@
             name     : field.label || field.name,
             value    : field.uuid,
             selected : this.props.page.get(`data.event.${name}`) === field.uuid,
+          };
+        });
+      }
+
+      /**
+       * get field
+       */
+      getStatus(name, type) {
+        // return value
+        return [...(this.getFields())].filter((field) => ['select', 'checkbox'].includes(field.type)).map((field) => {
+          // return fields
+          return {
+            name     : field.label || field.name,
+            value    : field.uuid,
+            selected : (this.props.page.get('data.event.status') || []).includes(field.uuid),
           };
         });
       }

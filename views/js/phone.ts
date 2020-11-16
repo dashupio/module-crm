@@ -177,16 +177,6 @@ class PhoneModule extends EventEmitter {
       status : 'calling',
     };
     conn.item = item;
-    conn.conn = conn.device.connect({
-      to       : number,
-      item     : item.get('_id'),
-      from     : conn.number,
-      page     : page.get('_id'),
-      agent    : (eden ? eden.user.get('_id') : 'Anonymous'),
-      member   : dashup.get('_meta.member'),
-      dashup   : dashup.get('_id'),
-      location : dashup.get('_id'),
-    });
     
     // create call event
     conn.event = await this.event(props, {
@@ -196,6 +186,19 @@ class PhoneModule extends EventEmitter {
       type  : `call:${conn.call.type}`,
       item  : item.get('_id'),
       title : `Called ${number}`,
+    });
+
+    // create connection
+    conn.conn = conn.device.connect({
+      to       : number,
+      item     : item.get('_id'),
+      from     : conn.number,
+      page     : page.get('_id'),
+      event    : conn.event.get('_id'),
+      agent    : (eden ? eden.user.get('_id') : 'Anonymous'),
+      member   : dashup.get('_meta.member'),
+      dashup   : dashup.get('_id'),
+      location : dashup.get('_id'),
     });
 
     // on disconnect
@@ -218,10 +221,10 @@ class PhoneModule extends EventEmitter {
       // on disconnect
       if (conn.dialer) {
         // check status
-        if (conn.dialer.status === 'dialing') {
-          // next
-          this.next(props);
-        }
+        conn.dialer.status = 'paused';
+
+        // emit
+        this.emit('modal');
       }
 
       // emit update
@@ -598,46 +601,8 @@ class PhoneModule extends EventEmitter {
     // check sort
     if (items === true) return filtered;
 
-    // get column field
-    const fields = props.context.fields || [];
-    const sort = fields.find((f) => f.uuid === props.page.get('data.sort.id'));
-    
     // return sorted
-    const sorted = filtered.sort((a, b) => {
-      // sort order
-      let aC = a.get(sort ? (sort.name || sort.uuid) : `_meta.created`) || 0;
-      let bC = b.get(sort ? (sort.name || sort.uuid) : `_meta.created`) || 0;
-
-      // check object
-      if (aC && typeof aC === 'object' && !(aC instanceof Date)) aC = JSON.stringify(aC);
-      if (bC && typeof bC === 'object' && !(bC instanceof Date)) bC = JSON.stringify(bC);
-
-      // check string
-      if (typeof aC === 'string' && typeof bC === 'string') {
-        // sort way
-        if (props.page.get('data.sort.way') === -1) {
-          // comnpare desc
-          return bC.toLowerCase().localeCompare(aC.toLowerCase());
-        }
-
-        // compare asc
-        return aC.toLowerCase().localeCompare(bC.toLowerCase());
-      }
-
-      // sort number
-      if (props.page.get('data.sort.way') === -1) {
-        if (bC > aC) return 1;
-        if (bC < aC) return -1;
-      }
-
-      // check order
-      if (bC > aC) return -1;
-      if (bC < aC) return 1;
-      return 0;
-    });
-
-    // return sorted
-    return sorted.slice(skip, (typeof items === 'number' ? items : 25) + skip);
+    return filtered.slice(skip, (typeof items === 'number' ? items : 25) + skip);
   }
 
   /**

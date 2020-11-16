@@ -6,13 +6,13 @@
     <div class="row g-0 flex-1">
 
       <!-- GRID VIEW -->
-      <div if={ !loading('items') && props.page.get('data.forms.0') } class={ `col-lg-6 dashup-grid${props.display !== 'grid' ? ' d-none' : ''}` }>
+      <div if={ !loading('items') && props.page.get('data.forms.0') } class={ `col-lg-12 dashup-grid${props.page.get('user.display') !== 'grid' ? ' d-none' : ''}` }>
         <dashup-view view="grid" type="page" struct="grid" active={ connection && connection.item ? [connection.item] : [] } ref={ ref('grid') } rows={ (limit, skip) => phone.items(props, limit, skip) } count={ phone.items(props, 9999999).length } fields={ props.context.fields } get-field={ getFieldType } { ...getProps() } />
       </div>
       <!-- / GRID VIEW -->
 
       <!-- CHAT LIST -->
-      <div class={ `col chat-column mb-4 mb-lg-0${props.display === 'grid' ? ' d-none' : ''}` }>
+      <div class={ `col chat-column mb-4 mb-lg-0${props.page.get('user.display') === 'grid' ? ' d-none' : ''}` }>
         <div class="card mb-3">
           <div class="card-body">
             <h4>
@@ -69,9 +69,9 @@
       <!-- / CHAT BODY -->
 
       <!-- CHAT MAIN -->
-      <div class="col d-flex flex-column ml-3" if={ connection && connection.item && !loading('item') }>
+      <div class={ `col d-flex flex-column ml-3${props.page.get('user.display') === 'grid' ? ' d-none' : ''}` } if={ connection && connection.item && !loading('item') && props.page.get('user.display') }>
         <div class="row">
-          <div class={ `col-lg-5${props.display === 'grid' ? ' d-none' : ''}` }>
+          <div class="col-lg-5">
             <div class="card mb-3">
               <div class="card-body">
                 <hbs template={ props.page.get('data.view') || props.page.get('data.display') || '' } data={ connection && connection.item ? connection.item.get() : {} } />
@@ -157,7 +157,31 @@
       </div>
       <!-- / CHAT MAIN -->
     </div>
-    <!-- / LIST VIEW -->
+
+    <!-- MODAL -->
+    <div if={ state.modal } class="modal fade" data-backdrop="static">
+      <div class="modal-dialog">
+        <div class="modal-content">
+
+          <!-- Modal Header -->
+          <div class="modal-header">
+            <h5 class="modal-title">
+              Called <b>{ getValue('name', null, state.modal) }</b>
+            </h5>
+            <button type="button" class="btn-close" data-dismiss="modal">&times;</button>
+          </div>
+
+          <!-- Modal body -->
+          <div class="modal-body text-center">
+            <button each={ (tag, i) in getTags() } class={ `btn btn-${tag.color || 'primary'} mr-3 mb-3` } onclick={ (e) => onTagNext(e, tag) }>
+              { tag.label }
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+    <!-- / MODAL -->
   </div>
 
   <script>
@@ -227,6 +251,7 @@
         this.onClick      = this.onClick.bind(this);
         this.loadItem     = this.loadItem.bind(this);
         this.loadStats    = this.loadStats.bind(this);
+        this.loadModal    = this.loadModal.bind(this);
         this.getFieldType = this.getFieldType.bind(this);
 
         // listeners
@@ -238,6 +263,7 @@
 
         // on item
         this.phone.on('item', this.loadItem);
+        this.phone.on('modal', this.loadModal);
       }
       
       /**
@@ -290,9 +316,10 @@
 
         // on item
         this.phone.removeListener('item', this.loadItem);
+        this.phone.removeListener('modal', this.loadModal);
 
         // on more
-        if (this.$('.task-container')) this.$('.task-container').removeListener('ps-y-reach-end', this.onMore);
+        if (this.$('.task-container')) this.$('.task-container').removeEventListener('ps-y-reach-end', this.onMore);
 
         // client
         if (this.__stats) {
@@ -378,6 +405,66 @@
       }
 
       /**
+       * get value
+       */
+      getValue(name, tld, item) {
+        // item
+        if (!item) item = this.connection.item;
+
+        // return field
+        const field = this.props.context.fields.find((f) => f.uuid === this.props.page.get(`data.field.${name}`));
+
+        // return value
+        return dotProp.get(item.toJSON(), `${field.name || field.uuid}${tld ? `.${tld}` : ''}`);
+      }
+
+      /**
+       * get field
+       */
+      getTags() {
+        // get tag fields
+        const tagFields = [];
+
+        // loop fields
+        [...(this.props.context.fields)].filter((f) => (this.props.page.get('data.status') || []).includes(f.uuid)).forEach((field) => {
+          // push
+          tagFields.push({
+            ...field,
+
+            form : 'contact',
+          });
+        });
+        [...(this.getFields())].filter((f) => (this.props.page.get('data.event.status') || []).includes(f.uuid)).forEach((field) => {
+          // push
+          tagFields.push({
+            ...field,
+
+            form : 'event',
+          });
+        });
+
+        // tag field
+        if (!tagFields) return [];
+
+        // get options
+        return tagFields.reduce((accum, field) => {
+          // push
+          accum.push(...(field.options || []).map((option) => {
+            // return value
+            return {
+              ...option,
+
+              form  : field.form,
+              field : field.name || field.uuid,
+            };
+          }));
+
+          // return accum
+          return accum;
+        }, []);
+      }
+
+      /**
        * get difference
        */
       getPercent(a, b) {
@@ -389,6 +476,33 @@
 
         // return total
         return total.toFixed(2);
+      }
+
+      /**
+       * get fields
+       */
+      getFields() {
+        // reduce
+        return [this.props.page.get('data.event.form')].filter((i) => i).reduce((accum, id) => {
+          // get page
+          const page = this.props.dashup.page(id);
+
+          // check page
+          if (!page || !page.get('data.fields')) return accum;
+
+          // loop fields
+          accum.push(...page.get('data.fields').map((f) => {
+            // return field
+            return {
+              ...f,
+
+              form : page.get('_id'),
+            };
+          }));
+
+          // return accum
+          return accum;
+        }, []);
       }
 
 
@@ -424,8 +538,6 @@
           this.update({
             limit : this.state.limit + 25,
           });
-
-          console.log(this.state.limit);
         }
       }
 
@@ -573,6 +685,35 @@
         this.loading('submit', false);
       }
 
+      /**
+       * on tag next
+       */
+      async onTagNext(e, tag) {
+        // get item
+        const item = tag.form === 'event' ? this.connection.event : this.state.modal;
+
+        // loading next
+        this.loading('next', true);
+
+        // save
+        item.set(tag.field, tag.value);
+        await item.save();
+
+        // close modal
+        $(this.$('.modal')).modal('hide');
+
+        // phone next
+        await this.phone.next(this.props);
+
+        // kill modal
+        this.update({
+          modal : null,
+        });
+
+        // loading next
+        this.loading('next', false);
+      }
+
 
       // ////////////////////////////////////////////////////////////////////////////
       //
@@ -601,12 +742,23 @@
         // query by
         if (model) {
           // set query
-          let query = this.props.dashup.page(model).sort('updated_at', -1);
+          let query = this.props.dashup.page(model);
 
           // check items
           if (this.props.page.get('data.forms')) {
             // loop forms
             query = query.in('_meta.form', this.props.page.get('data.forms'));
+          }
+
+          // add sort
+          if (this.props.page.get('data.sort.id')) {
+            // get field
+            const sortField = this.props.context.fields.find((f) => f.uuid === column.field);
+
+            // set sort
+            if (sortField) query = query.sort(sortField.name || sortField.uuid, this.props.page.get('data.sort.way'));
+          } else {
+            query = query.sort('created_at', -1);
           }
 
           // load filter
@@ -732,6 +884,20 @@
           events,
         });
         this.loading('item', false);
+      }
+
+      /**
+       * load modal
+       */
+      async loadModal() {
+        // check item
+        if (!this.connection.item) return;
+
+        // log
+        this.update({
+          modal : this.connection.item,
+        });
+        $(this.$('.modal')).modal('show');
       }
 
 
