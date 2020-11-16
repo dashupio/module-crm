@@ -251,7 +251,7 @@ class PhoneModule extends EventEmitter {
    */
   async sms(props, item, body) {
     // connection
-    const conn = this.connections.get(page.get('_id'));
+    const conn = this.connections.get(props.page.get('_id'));
 
     // get number
     const numberField = props.context.fields.find((f) => f.uuid === props.page.get('data.field.phone'));

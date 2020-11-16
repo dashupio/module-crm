@@ -69,7 +69,7 @@
       <!-- / CHAT BODY -->
 
       <!-- CHAT MAIN -->
-      <div class={ `col d-flex flex-column ml-3${props.page.get('user.display') === 'grid' ? ' d-none' : ''}` } if={ connection && connection.item && !loading('item') && props.page.get('user.display') }>
+      <div if={ connection && connection.item && !loading('item') } class={ `col d-flex flex-column ml-3${props.page.get('user.display') === 'grid' ? ' d-none' : ''}` }>
         <div class="row">
           <div class="col-lg-5">
             <div class="card mb-3">
@@ -108,19 +108,28 @@
             </div>
           </div>
           <div class="col">
-            <div class="mb-3 d-flex justify-content-end">
-              <button class={ `btn btn-primary ml-2${state.tab === 'note' ? ' active' : ''}` } onclick={ (e) => onTab(e, 'note') }>
-                <i class="fa fa-file mr-2" />
-                Note
+            <div class="mb-3 d-flex">
+              <button class={ `btn mr-2 btn-${state.tab === 'script' ? '' : 'outline-'}primary` } onclick={ (e) => onTab(e, 'script') }>
+                Script
               </button>
-              <button class={ `btn btn-primary ml-2${state.tab === 'sms' ? ' active' : ''}` } onclick={ (e) => onTab(e, 'sms') }>
-                <i class="fa fa-comments mr-2" />
-                SMS
+              <button class={ `btn mr-2 btn-${state.tab === 'history' ? '' : 'outline-'}primary` } onclick={ (e) => onTab(e, 'history') }>
+                History
               </button>
-              <button class={ `btn btn-primary ml-2${props.call ? ' active' : ''}` } onclick={ (e) => onCall(e) }>
-                <i class="fa fa-phone mr-2" />
-                Call
-              </button>
+
+              <div class="ml-auto">
+                <button class={ `btn mr-2 btn-${state.tab === 'note' ? '' : 'outline-'}primary` } onclick={ (e) => onTab(e, 'note') }>
+                  <i class="fa fa-file mr-2" />
+                  Note
+                </button>
+                <button class={ `btn mr-2 btn-${state.tab === 'sms' ? '' : 'outline-'}primary` } onclick={ (e) => onTab(e, 'sms') }>
+                  <i class="fa fa-comments mr-2" />
+                  SMS
+                </button>
+                <button class={ `btn btn-${props.call ? '' : 'outline-'}primary` } onclick={ (e) => onCall(e) }>
+                  <i class="fa fa-phone mr-2" />
+                  Call
+                </button>
+              </div>
             </div>
 
             <div if={ state.tab === 'sms' } class="mb-3 card">
@@ -151,7 +160,19 @@
               </div>
             </div>
 
-            <page-phone-event each={ (event, i) in state.events } event={ event } phone={ phone } { ...getProps() } />
+            <div if={ state.tab !== 'script' && state.tab !== 'history' }>
+              <page-phone-event each={ (event, i) in state.events } event={ event } phone={ phone } { ...getProps() } />
+            </div>
+
+            <div if={ state.tab === 'history' }>
+              <page-phone-event each={ (event, i) in state.history } event={ event } phone={ phone } { ...getProps() } />
+            </div>
+
+            <div if={ state.tab === 'script' } class="card">
+              <div class="card-body">
+                <hbs template={ props.page.get('data.script') || props.page.get('data.view') || props.page.get('data.display') || '' } data={ connection && connection.item ? connection.item.get() : {} } />
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -341,6 +362,11 @@
           // safe update
           this.state.events.removeListener('update', this.safeUpdate);
           this.state.events.deafen();
+        }
+        if (this.state.history && this.state.history.removeListener) {
+          // safe update
+          this.state.history.removeListener('update', this.safeUpdate);
+          this.state.history.deafen();
         }
       }
 
@@ -788,7 +814,7 @@
           if ((this.props.page.get('user.filter') || {}).me) {
             // get user fields
             const userFields = [...(this.props.context.fields)].filter((f) => (this.props.page.get('data.user') || []).includes(f.uuid));
-
+            
             // loop fields
             query = query[userFields.length > 1 ? 'or' : 'where'](...(userFields.map((userField) => {
               // return or
@@ -814,6 +840,37 @@
 
           // listen
           items = await query.listen();
+
+          // items
+          if (!this.state.history && this.props.page.get('data.event.form')) {
+            // get user fields
+            const userFields = [...(this.phone.fields(this.props))].filter((f) => (this.props.page.get('data.event.user') || []).includes(f.uuid));
+
+            // check user fields
+            if (userFields.length) {
+              // set query
+              let history = this.props.dashup.page(this.props.page.get('data.event.form'));
+
+              // loop fields
+              history = history[userFields.length > 1 ? 'or' : 'where'](...(userFields.map((userField) => {
+                // return or
+                return {
+                  [userField.name || userField.uuid] : this.props.dashup.get('_meta.member'),
+                };
+              })));
+
+              // listen
+              history = await history.sort('created_at', -1).limit(25).listen();
+
+              // on update
+              history.on('update', this.safeUpdate);
+
+              // update
+              this.update({
+                history,
+              });
+            }
+          }
         }
 
         // get initial stats

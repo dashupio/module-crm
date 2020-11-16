@@ -72,6 +72,16 @@
           <hbs template={ props.page.get('data.view') || '' } data={ state.test ? state.test.get() : {} } />
         </div>
       </div>
+
+      <div class="mb-3">
+        <label class="form-label">
+          Script
+        </label>
+        <code-block ref={ ref('view') } mode="handlebars" content={ props.page.get('data.script') || '' } prevent-update={ true } on-change={ (e) => onScript(e) } />
+        <div class="alert alert-primary mt-2">
+          <hbs template={ props.page.get('data.script') || '' } data={ state.test ? state.test.get() : {} } />
+        </div>
+      </div>
     </div>
 
     <div if={ props.page.get('data.forms.0') }>
@@ -82,7 +92,7 @@
           Filter By
         </label>
 
-        <dashup-query fields={ state.fields } on-change={ (val) => onFilter(val) } value={ props.page.get('data.filter') ? JSON.parse(props.page.get('data.filter')) : [] } />
+        <dashup-query fields={ props.context.fields } on-change={ (val) => onFilter(val) } value={ props.page.get('data.filter') ? JSON.parse(props.page.get('data.filter')) : [] } />
       </div>
     </div>
 
@@ -236,21 +246,27 @@
       }
 
       /**
-       * on color
+       * on display
        */
       onDisplay(value) {
         // set color
         this.props.data('display', value, true);
-        this.update();
       }
 
       /**
-       * on color
+       * on view
        */
       onView(value) {
         // set color
         this.props.data('view', value, true);
-        this.update();
+      }
+
+      /**
+       * on script
+       */
+      onScript(value) {
+        // set color
+        this.props.data('script', value, true);
       }
 
       /**
