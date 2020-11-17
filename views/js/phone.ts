@@ -156,6 +156,7 @@ class PhoneModule extends EventEmitter {
     }
     
     // get number
+    const userField = context.fields.find((f) => f.uuid === page.get('data.user.0'));
     const numberField = context.fields.find((f) => f.uuid === page.get('data.field.phone'));
     
     // check number
@@ -216,16 +217,20 @@ class PhoneModule extends EventEmitter {
         // set duration
         conn.event.set('duration', (new Date().getTime() - new Date(conn.event.get(time.name || time.uuid)).getTime()));
         conn.event.save();
+
+        // check duration
+        if (userField && conn.event.get('duration') > (30 * 1000)) {
+          // auto assign
+          item.set(userField.name || userField.uuid, dashup.get('_meta.member'));
+          item.save();
+        }
       }
 
-      // on disconnect
-      if (conn.dialer) {
-        // check status
-        conn.dialer.status = 'paused';
+      // check status
+      if (conn.dialer) conn.dialer.status = 'paused';
 
-        // emit
-        this.emit('modal');
-      }
+      // emit
+      this.emit('modal');
 
       // emit update
       this.emit('update');
@@ -344,6 +349,9 @@ class PhoneModule extends EventEmitter {
   next(props) {
     // connection
     const conn = this.connections.get(props.page.get('_id'));
+
+    // check dialer
+    if (!conn.dialer) return;
 
     // check connection
     if (conn.conn) return conn.conn.disconnect();
