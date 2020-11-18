@@ -87,9 +87,9 @@ class PhoneModule extends EventEmitter {
 
       // find or create number
       const item = await query.where({
-        [numberField.name || numberField.uuid] : conn.parameters.From,
+        [`${numberField.name || numberField.uuid}.number`] : conn.parameters.From,
       }).findOne() || await props.dashup.page(props.page.get('data.model')).create({
-        [numberField.name || numberField.uuid] : conn.parameters.From,
+        [`${numberField.name || numberField.uuid}.number`] : conn.parameters.From,
       });
 
       // emit connection
@@ -166,7 +166,7 @@ class PhoneModule extends EventEmitter {
     }
 
     // get number
-    const number = item.get(numberField.name || numberField.uuid);
+    const number = item.get(`${numberField.name || numberField.uuid}.number`);
 
     // set call
     conn.call = {
@@ -265,7 +265,7 @@ class PhoneModule extends EventEmitter {
     if (!numberField) return;
 
     // get number
-    const number = item.get(numberField.name || numberField.uuid);
+    const number = item.get(`${numberField.name || numberField.uuid}.number`);
 
     // send from/to
     await props.page.action('send', {

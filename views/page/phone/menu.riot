@@ -9,8 +9,8 @@
         { connection && connection.number || 'Select Number' }
       </button>
       <div class="dropdown-menu" aria-labelledby="dropdown-number">
-        <button each={ (number, i) in state.numbers } class="dropdown-item" onclick={ (e) => onNumber(e, number.number) }>
-          { number.number }
+        <button each={ (item, i) in state.numbers } class="dropdown-item" onclick={ (e) => onNumber(e, item.number) }>
+          { item.number.number }
         </button>
       </div>
     </div>
@@ -234,7 +234,7 @@
        */
       onNumber(e, number) {
         // set in props
-        this.phone.number(this.props, number);
+        this.phone.number(this.props, number.number);
       }
 
       /**
@@ -316,7 +316,7 @@
         // numbers
         if (this.state.numbers.length === 1) {
           // default
-          this.phone.number(this.props, this.state.numbers[0].number);
+          this.phone.number(this.props, (this.state.numbers[0].number || {}).number);
         }
       }
     }
