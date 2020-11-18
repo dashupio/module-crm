@@ -34,11 +34,11 @@
         </div>
       </div>
       
-      <div if={ getValue('recording') && getValue('recording').length } class="ml-auto">
-        <audio controls>
-          <source src={ dotProp.get(getValue('recording'), '0.url') } type="audio/x-wav">
-          Your browser does not support the audio element.
-        </audio>
+      <div if={ getValue('recording') && getValue('recording').length } class="ml-auto d-flex flex-row">
+        <button class="mr-3 btn btn-primary" onclick={ (e) => onTogglePlay(e) }>
+          <i class={ `fa fa-${state.play ? 'pause' : 'play'}` } />
+        </button>
+        <div class="wavesurfer" />
       </div>
     </div>
   </div>
@@ -48,6 +48,7 @@
     // perfect
     import moment from 'moment';
     import dotProp from 'dot-prop';
+    import WaveSurfer from 'wavesurfer.js';
 
     // export default
     export default class PagePhoneEvent {
@@ -88,6 +89,46 @@
         };
         this.moment = moment;
         this.dotProp = dotProp;
+      }
+
+      /**
+       * on mounted
+       */
+      onMounted(props) {
+        // done
+        if (dotProp.get(this.getValue('recording'), '0.url') && !this.wavesurfer) {
+          // create
+          this.wavesurfer = WaveSurfer.create({
+            height        : 40,
+            barGap        : null,
+            barWidth      : 2,
+            container     : this.$('.wavesurfer'),
+            waveColor     : '#2a60e4',
+            progressColor : '#1cbe81'
+          });
+          this.wavesurfer.load(dotProp.get(this.getValue('recording'), '0.url').replace('storage.googleapis.com/', ''));
+        }
+      }
+
+      /**
+       * on toggle
+       */
+      onTogglePlay(e) {
+        // prevent
+        e.preventDefault();
+        e.stopPropagation();
+
+        // play
+        if (this.state.play) {
+          this.wavesurfer.pause();
+        } else {
+          this.wavesurfer.play();
+        }
+
+        // update
+        this.update({
+          play : !this.state.play,
+        });
       }
 
       /**
@@ -165,4 +206,11 @@
       }
     }
   </script>
+
+  <style>
+    .wavesurfer {
+      width  : 15rem;
+      height : 2.5rem;
+    }
+  </style>
 </page-phone-event>
