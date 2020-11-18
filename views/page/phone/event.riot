@@ -35,10 +35,17 @@
       </div>
       
       <div if={ getValue('recording') && getValue('recording').length } class="ml-auto d-flex flex-row">
-        <button class="mr-3 btn btn-primary" onclick={ (e) => onTogglePlay(e) }>
-          <i class={ `fa fa-${state.play ? 'pause' : 'play'}` } />
-        </button>
-        <div class="wavesurfer" />
+        <div class="align-items-center mr-3">
+          <div class="btn-group">
+            <button class="btn btn-primary" onclick={ (e) => onTogglePlay(e) }>
+              <i class={ `fa fa-${state.play ? 'pause' : 'play'}` } />
+            </button>
+            <a class="btn btn-primary" download={ `${props.event.get('_id')}` } target="_BLANK" href={ dotProp.get(getValue('recording'), '0.url') }>
+              <i class="fa fa-download" />
+            </a>
+          </div>
+        </div>
+        <div class="wavesurfer" onclick={ (e) => onPlay(e) } />
       </div>
     </div>
   </div>
@@ -95,19 +102,50 @@
        * on mounted
        */
       onMounted(props) {
+        // build waveform
+        this.buildWaveform();
+      }
+
+      /**
+       * on mounted
+       */
+      onUpdated(props) {
+        // build waveform
+        this.buildWaveform();
+      }
+
+      /**
+       * build waveform
+       */
+      buildWaveform() {
         // done
-        if (dotProp.get(this.getValue('recording'), '0.url') && !this.wavesurfer) {
-          // create
-          this.wavesurfer = WaveSurfer.create({
-            height        : 40,
-            barGap        : null,
-            barWidth      : 2,
-            container     : this.$('.wavesurfer'),
-            waveColor     : '#2a60e4',
-            progressColor : '#1cbe81'
-          });
-          this.wavesurfer.load(dotProp.get(this.getValue('recording'), '0.url').replace('storage.googleapis.com/', ''));
-        }
+        if (!dotProp.get(this.getValue('recording'), '0.url') || this.wavesurfer) return;
+
+        // create
+        this.wavesurfer = WaveSurfer.create({
+          height        : 40,
+          barGap        : null,
+          barWidth      : 2,
+          container     : this.$('.wavesurfer'),
+          waveColor     : '#2a60e4',
+          progressColor : '#1cbe81'
+        });
+        this.wavesurfer.load(dotProp.get(this.getValue('recording'), '0.url').replace('storage.googleapis.com/', ''));
+      }
+
+      /**
+       * on play
+       */
+      onPlay(e) {
+        // prevent
+        e.preventDefault();
+        e.stopPropagation();
+
+        // play
+        setTimeout(() => this.wavesurfer.play(), 100);
+        this.update({
+          play : true,
+        });
       }
 
       /**
