@@ -346,7 +346,7 @@ class PhoneModule extends EventEmitter {
    *
    * @param props
    */
-  next(props) {
+  async next(props) {
     // connection
     const conn = this.connections.get(props.page.get('_id'));
 
@@ -357,7 +357,16 @@ class PhoneModule extends EventEmitter {
     if (conn.conn) return conn.conn.disconnect();
 
     // set item
-    conn.item = [...(this.items(props) || [])].filter((item) => !conn.dialer.dialled.includes(item.get('_id')))[0];
+    conn.item = [...(conn.items || [])].filter((item) => !conn.dialer.dialled.includes(item.get('_id')))[0];
+
+    // check more
+    if (!conn.item && conn.more()) {
+      // await load
+      await conn.next();
+
+      // run again
+      this.next(props);
+    }
 
     // check item
     if (!conn.item) {
@@ -589,54 +598,21 @@ class PhoneModule extends EventEmitter {
    *
    * @param props 
    */
-  items(props, items, skip = 0) {
+  items(props, items, count, { next, prev }) {
     // connection
     const conn = this.connections.get(props.page.get('_id'));
 
     // set items
     if (Array.isArray(items)) {
       // set items
+      conn.next  = next;
+      conn.prev  = prev;
+      conn.count = count;
       conn.items = items;
+      
+      // update
       return this.emit('update');
     }
-
-    // return sorted
-    const filtered = [...((conn.items || []).filter((item) => {
-      // return filter
-      return this.filter(props, item);
-    }))];
-    
-    // check sort
-    if (items === true) return filtered;
-
-    // return sorted
-    return filtered.slice(skip, (typeof items === 'number' ? items : 25) + skip);
-  }
-
-  /**
-   * filter items
-   *
-   * @param props 
-   * @param task 
-   */
-  filter(props, task) {
-    // tags
-    const tags = props.search && props.search.length ? props.search.toLowerCase().split(' ') : [];
-
-    // filter
-    if (tags.length) {
-      // search item
-      const searchable = JSON.stringify(task.get()).toLowerCase();
-
-      // search JSON
-      if (tags.find((tag) => {
-        // check
-        return !searchable.includes(tag);
-      })) return false;
-    }
-
-    // return true
-    return true;
   }
 }
 

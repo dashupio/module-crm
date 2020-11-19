@@ -6,8 +6,8 @@
     <div class="row g-0 flex-1">
 
       <!-- GRID VIEW -->
-      <div if={ !loading('items') && props.page.get('data.forms.0') } class={ `col-lg-12 dashup-grid${props.page.get('user.display') !== 'grid' ? ' d-none' : ''}` }>
-        <dashup-view view="grid" type="page" struct="grid" active={ connection && connection.item ? [connection.item] : [] } ref={ ref('grid') } rows={ (limit, skip) => phone.items(props, limit, skip) } count={ phone.items(props, 9999999).length } fields={ props.context.fields } get-field={ getFieldType } { ...getProps() } />
+      <div if={ props.page.get('data.forms.0') } class={ `col-lg-12 dashup-grid${props.page.get('user.display') !== 'grid' ? ' d-none' : ''}` }>
+        <dashup-view view="grid" type="page" struct="grid" ref={ ref('grid') } model={ props.page.get('data.model') } fields={ props.context.fields } get-field={ getFieldType } on-items={ onItems } { ...getProps() } />
       </div>
       <!-- / GRID VIEW -->
 
@@ -47,12 +47,21 @@
         </div>
         <div class="column-body">
           <div class="column-body-inner">
-            <div class="card">
+            <div class="card" if={ connection }>
+              <div class="card-header pb-0" if={ state.count }>
+                { state.count.toLocaleString() } Items
+              </div>
               <div if={ loading('items') } class="card-body text-center">
                 <i class="fa fa-spinner fa-spin h1" />
               </div>
               <div if={ !loading('items') } class="card-body task-container">
-                <page-phone-task each={ (item, i) in phone.items(props, state.limit) } phone={ phone } item={ item } page={ props.page } form-fields={ props.context.fields } add-user={ props.addUser } add-tag={ props.addTag } on-item={ (e) => props.onItem(e, item) } on-click={ (e) => connection && connection.item && connection.item.get('_id') === item.get('_id') ? props.onItem(e, item) : onClick(e, item) } class={ classes({ 'active' : connection && connection.item && connection.item.get('_id') === item.get('_id') }) } />
+                <button if={ hasPrev() } class={ `btn mb-3 btn-sm btn-block btn-primary${loading('items') ? ' disabled' : ''}` } onclick={ (e) => onPrev(e) }>
+                  { loading('items') ? 'Loading...' : 'Previous' }
+                </button>
+                <page-phone-task each={ (item, i) in connection.items } phone={ phone } item={ item } page={ props.page } form-fields={ props.context.fields } add-user={ props.addUser } add-tag={ props.addTag } on-item={ (e) => props.onItem(e, item) } on-click={ (e) => connection && connection.item && connection.item.get('_id') === item.get('_id') ? props.onItem(e, item) : onClick(e, item) } class={ classes({ 'active' : connection && connection.item && connection.item.get('_id') === item.get('_id') }) } />
+                <button if={ hasNext() } class={ `btn mt-3 btn-sm btn-block btn-primary${loading('items') ? ' disabled' : ''}` } onclick={ (e) => onNext(e) }>
+                  { loading('items') ? 'Loading...' : 'Next' }
+                </button>
               </div>
             </div>
           </div>
@@ -295,7 +304,10 @@
 
         // bind
         this.init         = this.init.bind(this);
-        this.onMore       = this.onMore.bind(this);
+        this.onNext       = this.onNext.bind(this);
+        this.onPrev       = this.onPrev.bind(this);
+        this.hasNext      = this.hasNext.bind(this);
+        this.onItems      = this.onItems.bind(this);
         this.onClick      = this.onClick.bind(this);
         this.loadItem     = this.loadItem.bind(this);
         this.loadStats    = this.loadStats.bind(this);
@@ -304,8 +316,6 @@
 
         // listeners
         this.props.page.on('reload', this.safeUpdate);
-        this.props.page.on('do.sort', this.init);
-        this.props.page.on('do.filter', this.init);
         this.props.page.on('data.view', this.safeUpdate);
         this.props.page.on('data.forms', this.safeUpdate);
         this.props.page.on('data.display', this.safeUpdate);
@@ -343,9 +353,6 @@
           this.ps = new PerfectScrollbar(this.$('.task-container'), {
             suppressScrollX : true,
           });
-
-          // on more
-          this.$('.task-container').addEventListener('ps-y-reach-end', this.onMore);
         }
       }
 
@@ -358,8 +365,6 @@
 
         // listeners
         this.props.page.removeListener('reload', this.safeUpdate);
-        this.props.page.removeListener('do.sort', this.init);
-        this.props.page.removeListener('do.filter', this.init);
         this.props.page.removeListener('data.view', this.safeUpdate);
         this.props.page.removeListener('data.forms', this.safeUpdate);
         this.props.page.removeListener('data.display', this.safeUpdate);
@@ -367,9 +372,6 @@
         // on item
         this.phone.removeListener('item', this.loadItem);
         this.phone.removeListener('modal', this.loadModal);
-
-        // on more
-        if (this.$('.task-container')) this.$('.task-container').removeEventListener('ps-y-reach-end', this.onMore);
 
         // client
         if (this.__stats) {
@@ -584,16 +586,80 @@
       }
 
       /**
+       * on items
+       */
+      onItems(items, count, { page, limit }) {
+        // update
+        this.phone.items(this.props, items, count, { page, limit });
+        this.update({
+          page,
+          count,
+          limit,
+
+          next : this.onNext,
+          prev : this.onPrev,
+          more : this.hasNext,
+        });
+      }
+
+      /**
        * on more
        */
-      onMore() {
-        // get items
-        if (this.phone.items(this.props, 999999999).length > this.state.limit) {
-          // update
-          this.update({
-            limit : this.state.limit + 25,
-          });
-        }
+      hasNext(e) {
+        // body
+        const gridBody = ((this.refs.grid || {}).refs || {}).body;
+
+        // has prev
+        return gridBody && gridBody.hasNext();
+      }
+
+      /**
+       * on more
+       */
+      async onNext(e) {
+        // check loading
+        if (this.loading('items')) return;
+
+        // body
+        const gridBody = ((this.refs.grid || {}).refs || {}).body;
+
+        // check body
+        if (!gridBody || !gridBody.hasNext()) return;
+
+        // on next
+        this.loading('items', true);
+        await gridBody.onNext(e);
+        this.loading('items', false);
+      }
+
+      /**
+       * on more
+       */
+      hasPrev(e) {
+        // body
+        const gridBody = ((this.refs.grid || {}).refs || {}).body;
+
+        // has prev
+        return gridBody && gridBody.hasPrev();
+      }
+
+      /**
+       * on more
+       */
+      async onPrev(e) {
+        // check loading
+        if (this.loading('items')) return;
+
+        // body
+        const gridBody = ((this.refs.grid || {}).refs || {}).body;
+
+        // check body
+        if (!gridBody || !gridBody.hasPrev()) return;
+
+        // on next
+        this.loading('items', true);
+        await gridBody.onPrev(e);
+        this.loading('items', false);
       }
 
       /**
@@ -789,127 +855,34 @@
        * init
        */
       async init() {
-        // loading
-        this.loading('items', true);
-
         // items
-        if (this.props.items && this.props.items.removeListener) {
-          // safe update
-          this.props.items.removeListener('update', this.safeUpdate);
-          this.props.items.deafen();
-        }
+        if (!this.state.history && this.props.page.get('data.event.form')) {
+          // get user fields
+          const userFields = [...(this.phone.fields(this.props))].filter((f) => (this.props.page.get('data.event.user') || []).includes(f.uuid));
 
-        // get model
-        let items = [];
-        const model = this.props.page.get('data.model');
+          // check user fields
+          if (userFields.length) {
+            // set query
+            let history = this.props.dashup.page(this.props.page.get('data.event.form'));
 
-        // query by
-        if (model) {
-          // set query
-          let query = this.props.dashup.page(model);
-
-          // check items
-          if (this.props.page.get('data.forms')) {
-            // loop forms
-            query = query.in('_meta.form', this.props.page.get('data.forms'));
-          }
-
-          // add sort
-          if (this.props.page.get('data.sort.id')) {
-            // get field
-            const sortField = this.props.page.get('data.sort.sort') ? {
-              name : this.props.page.get('data.sort.sort'),
-            } : this.props.context.fields.find((f) => f.uuid === column.field);
-
-            // set sort
-            if (sortField) query = query.sort(sortField.name || sortField.uuid, this.props.page.get('data.sort.way'));
-          } else {
-            query = query.sort('created_at', -1);
-          }
-
-          // load filter
-          let filter = null;
-
-          // try/catch
-          try {
-            filter = JSON.parse(this.props.page.get('data.filter'));
-          } catch (e) {}
-  
-          // add initial where
-          if (filter) {
-            // add wheres
-            filter.forEach((where) => {
-              // where
-              query = query.where(where);
-            });
-          }
-
-          // check where
-          (this.props.page.get('user.where') || []).forEach((where) => {
-            // add query
-            query = query[where[0]](where[1], where[2]);
-          });
-
-          // test by user
-          if ((this.props.page.get('user.filter') || {}).me) {
-            // get user fields
-            const userFields = [...(this.props.context.fields)].filter((f) => (this.props.page.get('data.user') || []).includes(f.uuid));
-            
             // loop fields
-            query = query[userFields.length > 1 ? 'or' : 'where'](...(userFields.map((userField) => {
+            history = history[userFields.length > 1 ? 'or' : 'where'](...(userFields.map((userField) => {
               // return or
               return {
                 [userField.name || userField.uuid] : this.props.dashup.get('_meta.member'),
               };
             })));
-          }
 
-          // get filter tags
-          if ((this.props.page.get('user.filter.tags') || []).length) {
-            // check vals
-            const tagFields = [...(this.props.context.fields)].filter((f) => (this.props.page.get('data.tag') || []).includes(f.uuid));
+            // listen
+            history = await history.sort('created_at', -1).limit(25).listen();
 
-            // loop fields
-            query = query[tagFields.length > 1 ? 'or' : 'where'](...(tagFields.map((tagField) => {
-              // return or
-              return {
-                [tagField.name || tagField.uuid] : this.props.page.get('user.filter.tags')
-              };
-            })));
-          }
+            // on update
+            history.on('update', this.safeUpdate);
 
-          // listen
-          items = await query.listen();
-
-          // items
-          if (!this.state.history && this.props.page.get('data.event.form')) {
-            // get user fields
-            const userFields = [...(this.phone.fields(this.props))].filter((f) => (this.props.page.get('data.event.user') || []).includes(f.uuid));
-
-            // check user fields
-            if (userFields.length) {
-              // set query
-              let history = this.props.dashup.page(this.props.page.get('data.event.form'));
-
-              // loop fields
-              history = history[userFields.length > 1 ? 'or' : 'where'](...(userFields.map((userField) => {
-                // return or
-                return {
-                  [userField.name || userField.uuid] : this.props.dashup.get('_meta.member'),
-                };
-              })));
-
-              // listen
-              history = await history.sort('created_at', -1).limit(25).listen();
-
-              // on update
-              history.on('update', this.safeUpdate);
-
-              // update
-              this.update({
-                history,
-              });
-            }
+            // update
+            this.update({
+              history,
+            });
           }
         }
 
@@ -921,15 +894,6 @@
           // load stats
           this.__stats = setInterval(this.loadStats, 5 * 1000);
         }
-
-        // update
-        this.phone.items(this.props, items);
-
-        // safe update
-        if (items && items.on) items.on('update', this.safeUpdate);
-
-        // loading
-        this.loading('items', false);
       }
 
       /**
