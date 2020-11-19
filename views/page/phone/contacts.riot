@@ -25,16 +25,6 @@
         
       <div class="mb-3">
         <label class="form-label">
-          Status Field(s)
-        </label>
-        <eden-select on-change={ (e, val) => onStatus(val) } ref={ ref('status') } placeholder="Select Status Field" data={ getStatus() } multiple={ true } />
-        <small>
-          Status available after calling
-        </small>
-      </div>
-        
-      <div class="mb-3">
-        <label class="form-label">
           Tag Field(s)
         </label>
         <eden-select on-change={ (e, val) => onTags(val) } ref={ ref('tag') } placeholder="Select Tag Field" data={ getTags() } multiple={ true } />
@@ -53,9 +43,41 @@
         </small>
       </div>
 
+      <hr />
+        
       <div class="mb-3">
         <label class="form-label">
-          Item Display (task)
+          Modal Field(s)
+        </label>
+        <eden-select on-change={ (e, val) => onModal(val) } ref={ ref('modal') } placeholder="Select Modal Field" data={ getModal() } multiple={ true } />
+        <small>
+          Fields to display for the end of call modal
+        </small>
+      </div>
+
+      <hr />
+
+      <ul class="nav nav-tabs mb-3">
+        <li class="nav-item">
+          <a class={ `nav-link${state.tab === 'display' ? ' active' : ''}` } href="#!" onclick={ (e) => onTab(e, 'display') }>
+            Display (sidebar)
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class={ `nav-link${state.tab === 'view' ? ' active' : ''}` } href="#!" onclick={ (e) => onTab(e, 'view') }>
+            Display (large)
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class={ `nav-link${state.tab === 'script' ? ' active' : ''}` } href="#!" onclick={ (e) => onTab(e, 'script') }>
+            Script
+          </a>
+        </li>
+      </ul>
+
+      <div class={ `mb-3${state.tab !== 'display' ? ' d-none' : ''}` }>
+        <label class="form-label">
+          Item Display (sidebar)
         </label>
         <code-block ref={ ref('display') } mode="handlebars" content={ props.page.get('data.display') || '' } prevent-update={ true } on-change={ (e) => onDisplay(e) } />
         <div class="alert alert-primary mt-2">
@@ -63,7 +85,7 @@
         </div>
       </div>
 
-      <div class="mb-3">
+      <div class={ `mb-3${state.tab !== 'view' ? ' d-none' : ''}` }>
         <label class="form-label">
           Item Display (large)
         </label>
@@ -73,7 +95,7 @@
         </div>
       </div>
 
-      <div class="mb-3">
+      <div class={ `mb-3${state.tab !== 'script' ? ' d-none' : ''}` }>
         <label class="form-label">
           Script
         </label>
@@ -134,6 +156,9 @@
             label : 'Phone',
           }
         ];
+
+        // set tab
+        this.state.tab = 'display';
       }
 
 
@@ -142,6 +167,17 @@
       // EVENT METHODS
       //
       // ////////////////////////////////////////////////////////////////////////////
+
+      onTab(e, tab) {
+        // prevent default
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // update tab
+        this.update({
+          tab,
+        });
+      }
 
       /**
        * on model
@@ -234,15 +270,15 @@
       /**
        * on model
        */
-      onStatus(id) {
+      onModal(val) {
         // get value
-        if (!id) id = this.refs.status.val();
+        if (!val) val = this.refs.status.val();
 
         // model
-        if (!id || !id.length) return;
+        if (!val || !val.length) return;
         
         // set model
-        this.props.data('status', id);
+        this.props.data('modal', val);
       }
 
       /**
@@ -341,14 +377,14 @@
       /**
        * get field
        */
-      getStatus() {
+      getModal() {
         // return value
-        return [...(this.props.context.fields)].filter((field) => ['select', 'checkbox'].includes(field.type)).map((field) => {
+        return [...(this.props.context.fields)].map((field) => {
           // return fields
           return {
             name     : field.label || field.name,
             value    : field.uuid,
-            selected : (this.props.page.get('data.status') || []).includes(field.uuid),
+            selected : (this.props.page.get('data.modal') || []).includes(field.uuid),
           };
         });
       }

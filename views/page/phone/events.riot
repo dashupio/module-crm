@@ -21,14 +21,16 @@
         </label>
         <eden-select on-change={ (e, value) => onField(field.name, value) } ref={ ref(field.name) } placeholder={ `Select ${field.label}` } data={ getField(field.name, field.type) } />
       </div>
+
+      <hr />
         
       <div class="mb-3">
         <label class="form-label">
-          Status Field(s)
+          Modal Field(s)
         </label>
-        <eden-select on-change={ (e, val) => onStatus(val) } ref={ ref('status') } placeholder="Select Status Field" data={ getStatus() } multiple={ true } />
+        <eden-select on-change={ (e, val) => onModal(val) } ref={ ref('modal') } placeholder="Select Modal Field" data={ getModal() } multiple={ true } />
         <small>
-          Status available after calling
+          Fields to display for the end of call modal
         </small>
       </div>
     </div>
@@ -180,15 +182,15 @@
       /**
        * on model
        */
-      onStatus(id) {
+      onModal(val) {
         // get value
-        if (!id) id = this.refs.status.val();
+        if (!val) val = this.refs.modal.val();
 
         // model
-        if (!id || !id.length) return;
+        if (!val || !val.length) return;
         
         // set model
-        this.props.data('event.status', id);
+        this.props.data('event.modal', val);
       }
 
 
@@ -255,14 +257,14 @@
       /**
        * get field
        */
-      getStatus(name, type) {
+      getModal(name, type) {
         // return value
-        return [...(this.getFields())].filter((field) => ['select', 'checkbox'].includes(field.type)).map((field) => {
+        return [...(this.getFields())].map((field) => {
           // return fields
           return {
             name     : field.label || field.name,
             value    : field.uuid,
-            selected : (this.props.page.get('data.event.status') || []).includes(field.uuid),
+            selected : (this.props.page.get('data.event.modal') || []).includes(field.uuid),
           };
         });
       }

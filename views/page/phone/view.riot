@@ -43,7 +43,6 @@
             </div>
             <!-- / total calls -->
           </div>
-          
         </div>
         <div class="column-body">
           <div class="column-body-inner">
@@ -122,7 +121,7 @@
                 Script
               </button>
               <button class={ `btn mr-2 btn-${state.tab === 'history' ? '' : 'outline-'}primary` } onclick={ (e) => onTab(e, 'history') }>
-                History
+                { state.tab === 'history' ? 'My History' : 'Lead History' }
               </button>
 
               <div class="ml-auto">
@@ -203,36 +202,30 @@
 
           <!-- Modal body -->
           <div class="modal-body">
-            <div class="mb-3">
-              <label class="form-label">
-                Contact Status
-              </label>
-              <div>
-                <button each={ (tag, i) in getTags() } class={ `btn btn-${tag.color || 'primary'} mr-3 mb-3` } onclick={ (e) => onTagNext(e, tag) }>
-                  { tag.label }
-                </button>
-              </div>
+            <div class="mb-3" if={ props.page.get('data.modal.0') }>
+              <dashup-view ref={ ref('modal-item') } view="form" type="page" struct="form" item={ connection.item } preview={ !props.altering } fields={ props.context.fields } get-field={ getFieldType } children={ getModalChildren() } { ...getProps() } />
             </div>
-            <div class="mb-3">
-              <label class="form-label">
-                Event Status
-              </label>
-              <div>
-                <button each={ (tag, i) in getTags(true) } class={ `btn btn-${tag.color || 'primary'} mr-3 mb-3` } onclick={ (e) => onTagNext(e, tag) }>
-                  { tag.label }
-                </button>
-              </div>
+            <hr if={ props.page.get('data.event.modal.0') && props.page.get('data.modal.0') } />
+            <div class="mb-3" if={ props.page.get('data.event.modal.0') && connection.event }>
+              <dashup-view ref={ ref('modal-event') } view="form" type="page" struct="form" item={ connection.event } preview={ !props.altering } fields={ getFields() } get-field={ getFieldType } children={ getModalChildren(true) } { ...getProps() } />
             </div>
-
+            <hr />
             <div class="mb-3">
               <label class="form-label">
                 Note
               </label>
-              <textarea class="form-control mb-3" type="text" id="note" />
-              <button class={ `btn btn-success${loading('note') ? ' disabled' : ''}` } onclick={ (e) => onNote(e, true) }>
-                { loading('note') ? 'Adding Note...' : 'Add Note' }
-              </button>
+              <textarea class="form-control mb-3" type="text" ref="modal-note" />
             </div>
+          </div>
+
+          <!-- Modal footer -->
+          <div class="modal-footer">
+            <button type="button" class="btn btn-info mr-auto" data-dismiss="modal">
+              Close
+            </button>
+            <button type="button" class={ `btn btn-success${loading('modal') ? ' disabled' : ''}` } onclick={ (e) => onSubmitModal(e) }>
+              { loading('modal') ? 'Submitting...' : 'Next' }
+            </button>
           </div>
 
         </div>
@@ -324,7 +317,7 @@
         this.phone.on('item', this.loadItem);
         this.phone.on('modal', this.loadModal);
       }
-      
+
       /**
        * on mounted
        *
@@ -337,7 +330,7 @@
         // init
         this.init();
       }
-      
+
       /**
        * on mounted
        *
@@ -346,7 +339,7 @@
       onUpdated(...args) {
         // check window
         if (typeof window === 'undefined') return;
-        
+
         // set ps
         if (!this.$('.task-container.ps') && this.$('.task-container')) {
           // add bar
@@ -423,7 +416,12 @@
         delete newProps.class;
         delete newProps.event;
         delete newProps.struct;
-        if (!noPage) delete newProps.fields;
+
+        // check page
+        if (!noPage) {
+          delete newProps.fields;
+          delete newProps.children;
+        }
 
         // delete page
         if (noPage) {
@@ -560,6 +558,20 @@
           // return accum
           return accum;
         }, []);
+      }
+
+      /**
+       * get modal children
+       */
+      getModalChildren(event) {
+        // check event
+        if (event) {
+          // get modal children
+          return [...(this.getFields())].filter((f) => (this.props.page.get('data.event.modal') || []).includes(f.uuid));
+        }
+
+        // return fields
+        return [...(this.props.context.fields)].filter((f) => (this.props.page.get('data.modal') || []).includes(f.uuid));
       }
 
 
@@ -818,29 +830,66 @@
       /**
        * on tag next
        */
-      async onTagNext(e, tag) {
-        // get item
-        const item = tag.form === 'event' ? this.connection.event : this.state.modal;
+      async onSubmitModal(e) {
+        // get event
+        const item = this.connection.item;
+        const event = this.connection.event;
 
-        // loading next
-        this.loading('next', true);
+        // get data from each form
+        const itemData = this.refs['modal-item'] && this.refs['modal-item'].data();
+        const eventData = this.refs['modal-event'] && this.refs['modal-event'].data();
 
-        // save
-        item.set(tag.field, tag.value);
-        await item.save();
+        // loading modal
+        this.loading('modal', true);
 
-        // close modal
+        // submit form
+        if (item && itemData) await this.props.dashup.action({
+          type   : 'page',
+          page   : this.props.page.get('data.forms')[0],
+          form   : this.props.page.get('data.forms')[0],
+          model  : this.props.page.get('data.model'),
+          struct : 'form',
+        }, 'form.submit', {
+          ...itemData,
+
+          _id : item.get('_id'),
+        });
+
+        // check event
+        if (event && eventData) await this.props.dashup.action({
+          type   : 'page',
+          page   : this.props.page.get('data.event.form'),
+          form   : this.props.page.get('data.event.form'),
+          model  : this.props.page.get('data.event.model'),
+          struct : 'form',
+        }, 'form.submit', {
+          ...eventData,
+
+          _id : event.get('_id'),
+        });
+
+        // check modal notes
+        const body = $(this.$('[ref="modal-note"]')).val();
+
+        // check notes
+        if (body && body.length) {
+          // add event
+          await this.phone.event(this.props, {
+            body,
+            type  : 'note',
+            item  : this.connection.item.get('_id'),
+            time  : new Date(),
+            title : 'Added Note',
+          });
+        }
+
+        // loading modal
+        this.loading('modal', false);
         $(this.$('.modal')).modal('hide');
 
         // phone next
+        this.loading('next', true);
         await this.phone.next(this.props);
-
-        // kill modal
-        this.update({
-          modal : null,
-        });
-
-        // loading next
         this.loading('next', false);
       }
 
