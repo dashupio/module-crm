@@ -125,6 +125,10 @@
               </button>
 
               <div class="ml-auto">
+                <button if={ getEmail() } class={ `btn mr-2 btn-${state.tab === 'email' ? '' : 'outline-'}primary${getValue('email') ? '' : ' disabled'}` } onclick={ (e) => onTab(e, 'email') }>
+                  <i class="fa fa-envelope mr-2" />
+                  Email
+                </button>
                 <button class={ `btn mr-2 btn-${state.tab === 'note' ? '' : 'outline-'}primary` } onclick={ (e) => onTab(e, 'note') }>
                   <i class="fa fa-file mr-2" />
                   Note
@@ -136,6 +140,21 @@
                 <button class={ `btn btn-${props.call ? '' : 'outline-'}primary` } onclick={ (e) => onCall(e) }>
                   <i class="fa fa-phone mr-2" />
                   Call
+                </button>
+              </div>
+            </div>
+
+            <div if={ state.tab === 'email' } class="mb-3 card">
+              <div class="card-body">
+                <label class="form-label">
+                  Email
+                </label>
+                <input class="form-control mb-3" placeholder="Subject" ref="subject" />
+                <editor name="email" show-toolbar={ true } ref={ ref('email') } placeholder="Content" />
+              </div>
+              <div class="card-footer text-right pt-0">
+                <button class={ `btn btn-success${loading('email') ? ' disabled' : ''}${getValue('email') ? '' : ' disabled'}` } onclick={ (e) => onEmail(e) }>
+                  { loading('email') ? 'Sending...' : 'Send' }
                 </button>
               </div>
             </div>
@@ -626,6 +645,14 @@
       }
 
       /**
+       * has email
+       */
+      getEmail() {
+        // return email
+        return (this.props.page.get('connects') || []).find((c) => c.email);
+      }
+
+      /**
        * on more
        */
       async onNext(e) {
@@ -686,6 +713,47 @@
 
         // create call
         this.phone.start(this.props, this.connection.item);
+      }
+
+      /**
+       * on send
+       */
+      async onEmail(e) {
+        // prevent default
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+
+        // check email
+        if (!this.connection.item || !this.getValue('email')) return;
+
+        // check sms
+        const body = this.refs.email.val();
+        const subject = this.$('[ref="subject"]').value;
+        const connect = this.getEmail();
+
+        // loading
+        this.loading('email', true);
+
+        // submit form
+        const item = await this.props.dashup.action({
+          type   : 'connect',
+          user   : this.props.me.get('_id'),
+          page   : this.props.page.get('_id'),
+          form   : this.props.page.get('data.event.form'),
+          model  : this.props.page.get('data.event.model'),
+          struct : connect.type,
+        }, 'send', connect, {
+          body,
+          subject, 
+          to : this.getValue('email'),
+          item : this.connection.item.get('_id'),
+          user : this.props.dashup.get('_meta.member'),
+        });
+
+        // loading
+        this.loading('email', false);
       }
 
       /**

@@ -14,7 +14,8 @@
           { dotProp.get(getValue('user'), '0.name') }
           { getValue('title') }
         </b>
-        <p if={ getValue('body') } class="m-0">
+        <editor-render if={ getValue('type') === 'email:outbound' || getValue('type') === 'email:inbound' } content={ getValue('body') } />
+        <p if={ getValue('type') !== 'email:outbound' && getValue('type') !== 'email:inbound' && getValue('body') } class="m-0">
           { getValue('body') }
         </p>
         <small>
@@ -92,6 +93,14 @@
           'note' : {
             icon  : 'fa fa-sticky-note',
             color : 'secondary',
+          },
+          'email:outbound' : {
+            icon  : 'fa fa-envelope',
+            color : 'info',
+          },
+          'email:inbound' : {
+            icon  : 'fa fa-envelope-open',
+            color : 'info',
           }
         };
         this.moment = moment;
