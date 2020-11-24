@@ -1,0 +1,216 @@
+<page-phone-scripts>
+  <div>
+    <div class="mb-3">
+      <div each={ (script, i) in getScripts() } class="btn-group mr-2 mb-2">
+        <button class={ `btn btn-${state.script && state.script.id === script.id ? 'primary' : 'secondary'}` } onclick={ (e) => onScript(e, script) }>
+          { script.name || 'N/A' }
+        </button>
+        <button class={ `btn btn-danger${loading(script.id) ? ' disabled' : ''}` } onclick={ (e) => onRemove(e, script) }>
+          <i class={ `fa fa-times${loading(script.id) ? ' fa-spin' : ''}` } />
+        </button>
+      </div>
+
+      <button class="btn btn-outline-primary mr-2 mb-2" onclick={ (e) => onCreate(e) }>
+        <i class="fa fa-plus mr-2" />
+        Create
+      </button>
+    </div>
+    <hr if={ state.script } />
+    <div if={ state.script } class="mb-3">
+      <label class="form-label">
+        Script Name
+      </label>
+      <input class="form-control" value={ state.script.name } placeholder="Script Name" onchange={ (e) => onScriptName(e) } />
+    </div>
+    <div if={ state.script } class="mb-3">
+      <label class="form-label">
+        Script Text
+      </label>
+      <editor ref={ ref('script') } show-toolbar={ true } content={ state.script.text || '' } on-change={ (e) => onScriptText(e) } />
+    </div>
+  </div>
+
+  <script>
+    // import uuid
+    import { v4 as uuid } from 'uuid';
+
+    // export default
+    export default class PagePhoneScripts {
+
+
+      // ////////////////////////////////////////////////////////////////////////////
+      //
+      // RIOT METHODS
+      //
+      // ////////////////////////////////////////////////////////////////////////////
+
+      /**
+       * on before mount
+       */
+      onBeforeMount() {
+        // bind
+        this.onScript = this.onScript.bind(this);
+        this.onScriptName = this.onScriptName.bind(this);
+        this.onScriptText = this.onScriptText.bind(this);
+      }
+
+
+      // ////////////////////////////////////////////////////////////////////////////
+      //
+      // EVENT METHODS
+      //
+      // ////////////////////////////////////////////////////////////////////////////
+      
+      /**
+       * on script
+       */
+      onScript(e, script) {
+        // prevent default
+        e.preventDefault();
+        e.stopPropagation();
+
+        // update
+        if (this.state.script) {
+          // remove
+          this.update({
+            script : null,
+          });
+        }
+
+        // update
+        this.update({
+          script,
+        });
+      }
+
+      /**
+       * on script name
+       */
+      onScriptName(e) {
+        // get scripts
+        const scripts = this.getScripts();
+
+        // find
+        const found = scripts.find((s) => s.id === this.state.script.id);
+
+        // update
+        found.name = e.target.value;
+        this.state.script.name = e.target.value;
+
+        // data
+        this.props.data('scripts', scripts);
+      }
+
+      /**
+       * on script name
+       */
+      onScriptText(val) {
+        // get scripts
+        const scripts = this.getScripts();
+
+        // find
+        const found = scripts.find((s) => s.id === this.state.script.id);
+
+        // update
+        found.text = val;
+        this.state.script.text = val;
+
+        // data
+        this.props.data('scripts', scripts);
+      }
+
+      /**
+       * create script
+       */
+      onCreate(e) {
+        // get scripts
+        const scripts = this.getScripts();
+        const script = {
+          id : uuid(),
+        };
+
+        // push
+        scripts.push(script);
+
+        // select
+        this.onScript(e, script);
+
+        // data
+        this.props.data('scripts', scripts);
+      }
+
+      /**
+       * on remove
+       */
+      onRemove(e, script) {
+        // prevent default
+        e.preventDefault();
+        e.stopPropagation();
+
+        // check exists
+        if (this.state.script && this.state.script.id === script.id) {
+          // remove script
+          this.update({
+            script : null,
+          });
+        }
+
+        // remove
+        const scripts = this.getScripts().filter((s) => s.id !== script.id);
+
+        // upate
+        this.props.data('scripts', scripts);
+      }
+
+      // ////////////////////////////////////////////////////////////////////////////
+      //
+      // GET METHODS
+      //
+      // ////////////////////////////////////////////////////////////////////////////
+      
+      /**
+       * get scripts
+       */
+      getScripts() {
+        // return
+        return Array.isArray(this.props.page.get('data.scripts')) ? this.props.page.get('data.scripts') : [];
+      }
+
+      // ////////////////////////////////////////////////////////////////////////////
+      //
+      // MISC METHODS
+      //
+      // ////////////////////////////////////////////////////////////////////////////
+
+      /**
+       * ref
+       */
+      ref(name) {
+        // set refs
+        if (!this.refs) this.refs = {};
+
+        // return ref function
+        return (that) => {
+          // set ref
+          this.refs[name] = that;
+        };
+      }
+
+      /**
+       * set loading
+       */
+      loading(type, way) {
+        // set loading
+        if (!this.__loading) this.__loading = new Map();
+
+        // check loading
+        if (!type) return !!Array.from(this.__loading.values()).find((v) => v);
+        if (typeof way === 'undefined') return !!this.__loading.get(type);
+
+        // set loading
+        this.__loading.set(type, way);
+        this.update();
+      }
+    }
+  </script>
+</page-phone-scripts>

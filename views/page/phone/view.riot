@@ -197,7 +197,12 @@
 
             <div if={ state.tab === 'script' } class="card">
               <div class="card-body">
-                <hbs template={ props.page.get('data.script') || props.page.get('data.view') || props.page.get('data.display') || '' } data={ connection && connection.item ? connection.item.get() : {} } />
+                <button each={ (script, i) in getScripts() } class={ `btn btn-${state.script && state.script.id === script.id ? 'primary' : 'secondary'} mr-2 mb-2` } onclick={ (e) => onScript(e, script) }>
+                  { script.name || 'N/A' }
+                </button>
+              </div>
+              <div if={ state.script } class="card-body">
+                <hbs class="ql-editor p-0 m-0" template={ state.script.text || '' } data={ connection && connection.item ? connection.item.get() : {} } />
               </div>
             </div>
           </div>
@@ -321,6 +326,7 @@
         this.hasNext      = this.hasNext.bind(this);
         this.onItems      = this.onItems.bind(this);
         this.onClick      = this.onClick.bind(this);
+        this.onScript     = this.onScript.bind(this);
         this.loadItem     = this.loadItem.bind(this);
         this.loadStats    = this.loadStats.bind(this);
         this.loadModal    = this.loadModal.bind(this);
@@ -592,6 +598,14 @@
         // return fields
         return [...(this.props.context.fields)].filter((f) => (this.props.page.get('data.modal') || []).includes(f.uuid));
       }
+      
+      /**
+       * get scripts
+       */
+      getScripts() {
+        // return
+        return Array.isArray(this.props.page.get('data.scripts')) ? this.props.page.get('data.scripts') : [];
+      }
 
 
       // ////////////////////////////////////////////////////////////////////////////
@@ -817,6 +831,28 @@
           // next
           this.phone.next(this.props);
         }
+      }
+      
+      /**
+       * on script
+       */
+      onScript(e, script) {
+        // prevent default
+        e.preventDefault();
+        e.stopPropagation();
+
+        // update
+        if (this.state.script) {
+          // remove
+          this.update({
+            script : null,
+          });
+        }
+
+        // update
+        this.update({
+          script,
+        });
       }
 
       /**

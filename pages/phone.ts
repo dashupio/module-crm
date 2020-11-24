@@ -62,7 +62,7 @@ export default class PhonePage extends Struct {
 
     // return page data
     return {
-      tabs : ['Contacts', 'Events', 'Numbers', 'Connects'],
+      tabs : ['Contacts', 'Events', 'Numbers', 'Connects', 'Scripts'],
 
       wizard : false ? null : {
         steps : [{
@@ -107,6 +107,7 @@ export default class PhonePage extends Struct {
       menu     : 'page/phone/menu',
       events   : 'page/phone/events',
       filter   : 'page/phone/filter',
+      scripts  : 'page/phone/scripts',
       numbers  : 'page/phone/numbers',
       contacts : 'page/phone/contacts',
       connects : 'page/phone/connects',
