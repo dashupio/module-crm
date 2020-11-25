@@ -1,10 +1,10 @@
 <page-phone-menu>
   <div>
     <!-- NUMBERS -->
-    <button if={ connection && connection.number && !connection.call } class="btn btn-link mr-2">
+    <button if={ connection && connection.number && !connection.call } class="btn btn-link mr-2" data-toggle="tooltip" title="Calling Number">
       { connection.number }
     </button>
-    <div if={ state.numbers && state.numbers.length > 1 && (!connection || !connection.call) } class="btn-group dropdown mr-2">
+    <div if={ state.numbers && state.numbers.length > 1 && (!connection || !connection.call) } class="btn-group dropdown mr-2" data-toggle="tooltip" title="Calling Number">
       <button class={ `btn btn-${connection && connection.number ? 'light' : 'info'}` } id="dropdown-number" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
         { connection && connection.number || 'Select Number' }
       </button>
@@ -17,14 +17,14 @@
     <!-- / NUMBERS -->
 
     <!-- STATUS -->
-    <button if={ connection && connection.number && !connection.call } class={ `btn mr-2 btn-${status[connection.status || 'connecting']}` }>
+    <button if={ connection && connection.number && !connection.call } class={ `btn mr-2 btn-${status[connection.status || 'connecting']}` } data-toggle="tooltip" title="Connection Status">
       <i class="fa fa-plug mr-2" />
       { ucfirst(connection.status || 'connecting') }
     </button>
-    <button if={ connection && connection.call } class="btn btn-link mr-2">
+    <button if={ connection && connection.call } class="btn btn-link mr-2" data-toggle="tooltip" title="Call Time">
       { new Date((new Date().getTime() - connection.call.start.getTime())).toISOString().substr(11, 8) }
     </button>
-    <div if={ connection && connection.call } class="btn-group mr-1">
+    <div if={ connection && connection.call } class="btn-group mr-1" data-toggle="tooltip" title="Call Status">
       <button class={ `btn btn-${status[connection.call.status || 'connecting']}` }>
         { ucfirst(connection.call.status) }
       </button>
@@ -33,11 +33,11 @@
 
     <!-- INCOMING -->
     <div if={ connection && connection.call && connection.call.type === 'incoming' && !connection.call.answered } class="btn-group mr-1">
-      <button class="btn btn-success mr-2" onclick={ (e) => onStart(e) }>
+      <button class="btn btn-success mr-2" onclick={ (e) => onStart(e) } data-toggle="tooltip" title="Accept Incoming Call">
         <i class={ `fa fa-phone mr-2` } />
         Accept
       </button>
-      <button class="btn btn-danger mr-2" onclick={ (e) => onEnd(e) }>
+      <button class="btn btn-danger mr-2" onclick={ (e) => onEnd(e) } data-toggle="tooltip" title="Reject Incoming Call">
         <i class={ `fa fa-times mr-2` } />
         Reject
       </button>
@@ -46,10 +46,10 @@
 
     <!-- CALL METHODS -->
     <div if={ connection && connection.call && (connection.call.type !== 'incoming' || connection.call.answered) } class="btn-group mr-1">
-      <button class={ `btn btn-${connection.call.muted ? 'danger' : 'success'}` } onclick={ (e) => onMute(e) }>
+      <button class={ `btn btn-${connection.call.muted ? 'danger' : 'success'}` } onclick={ (e) => onMute(e) } data-toggle="tooltip" title="Mute Call">
         <i class={ `fa fa-${connection.call.muted ? 'volume-mute' : 'volume'}` } />
       </button>
-      <button class="btn btn-danger" onclick={ (e) => onEnd(e) }>
+      <button class="btn btn-danger" onclick={ (e) => onEnd(e) } data-toggle="tooltip" title="End Call">
         <i class={ `fa fa-times` } />
       </button>
     </div>
@@ -57,33 +57,33 @@
 
     <!-- POWER DIALLER -->
     <div if={ connection } class="btn-group mr-2">
-      <button if={ !connection.dialer } class="btn btn-primary" onclick={ (e) => onDialer(e) }>
+      <button if={ !connection.dialer } class="btn btn-primary" onclick={ (e) => onDialer(e) } data-toggle="tooltip" title="Start Dialer">
         Start Dialer
       </button>
-      <button if={ connection.dialer } class="btn btn-primary">
+      <button if={ connection.dialer } class="btn btn-primary" data-toggle="tooltip" title="Dialer Status">
         { ucfirst(connection.dialer.status) } - 
         { connection.dialer.dialled.length } of { connection.count }
       </button>
-      <button if={ connection.dialer && connection.dialer.status === 'dialing' } class="btn btn-info" onclick={ (e) => onNext(e) }>
+      <button if={ connection.dialer && connection.dialer.status === 'dialing' } class="btn btn-info" onclick={ (e) => onNext(e) } data-toggle="tooltip" title="Next Call">
         <i class="fa fa-forward" />
       </button>
-      <button if={ connection.dialer && connection.dialer.status === 'dialing' } class="btn btn-danger" onclick={ (e) => onPause(e) }>
+      <button if={ connection.dialer && connection.dialer.status === 'dialing' } class="btn btn-danger" onclick={ (e) => onPause(e) } data-toggle="tooltip" title="Pause Dialer">
         <i class="fa fa-pause" />
       </button>
-      <button if={ connection.dialer && connection.dialer.status === 'paused' } class="btn btn-success" onclick={ (e) => onPlay(e) }>
+      <button if={ connection.dialer && connection.dialer.status === 'paused' } class="btn btn-success" onclick={ (e) => onPlay(e) } data-toggle="tooltip" title="Start Dialer">
         <i class="fa fa-play" />
       </button>
-      <button if={ connection.dialer && connection.dialer.status === 'paused' } class="btn btn-danger" onclick={ (e) => onFinish(e) }>
+      <button if={ connection.dialer && connection.dialer.status === 'paused' } class="btn btn-danger" onclick={ (e) => onFinish(e) } data-toggle="tooltip" title="End Dialer">
         <i class="fa fa-times" />
       </button>
-      <button if={ connection.dialer && connection.dialer.status === 'finished' } class="btn btn-danger" onclick={ (e) => onFinish(e) }>
+      <button if={ connection.dialer && connection.dialer.status === 'finished' } class="btn btn-danger" onclick={ (e) => onFinish(e) } data-toggle="tooltip" title="End Dialer">
         <i class="fa fa-times" />
       </button>
     </div>
     <!-- / POWER DIALLER -->
 
     <!-- DISPLAY -->
-    <button class="mr-2 btn btn-primary" onclick={ (e) => onDisplay(e) }>
+    <button class="mr-2 btn btn-primary" onclick={ (e) => onDisplay(e) } data-toggle="tooltip" title="Toggle View">
       <i class={ `fa fa-${props.page.get('user.display') === 'grid' ? 'columns' : 'th'}` } />
     </button>
     <!-- / DISPLAY -->
@@ -169,6 +169,20 @@
         // on numbers
         this.props.page.on('numbers', this.numbers);
         this.numbers();
+
+        // tooltip
+        $('[data-toggle="tooltip"]').tooltip();
+      }
+
+      /**
+       * on mounted
+       */
+      onUpdated () {
+        // check window
+        if (typeof window === 'undefined') return;
+
+        // tooltip
+        $('[data-toggle="tooltip"]').tooltip();
       }
 
       /**
