@@ -17,6 +17,9 @@
           <div class="card-body">
             <h4>
               Stats
+              <small if={ state.count } class="ml-auto">
+                { state.count.toLocaleString() } Items
+              </small>
             </h4>
 
             <!-- total calls -->
@@ -45,15 +48,12 @@
           </div>
         </div>
         <div class="column-body">
-          <div class="column-body-inner">
-            <div class="card" if={ connection }>
-              <div class="card-header pb-0" if={ state.count }>
-                { state.count.toLocaleString() } Items
-              </div>
-              <div if={ loading('items') } class="card-body text-center">
+          <div class="column-body-inner mx--1">
+            <div class="card bg-transparent px-1" if={ connection }>
+              <div if={ loading('items') } class="text-center">
                 <i class="fa fa-spinner fa-spin h1" />
               </div>
-              <div if={ !loading('items') } class="card-body task-container">
+              <div if={ !loading('items') } class="task-container">
                 <button if={ hasPrev() } class={ `btn mb-3 btn-sm btn-block btn-primary${loading('items') ? ' disabled' : ''}` } onclick={ (e) => onPrev(e) }>
                   { loading('items') ? 'Loading...' : 'Previous' }
                 </button>
