@@ -15,7 +15,7 @@
       <div class={ `col chat-column mb-4 mb-lg-0${props.page.get('user.display') === 'grid' ? ' d-none' : ''}` }>
         <div class="card mb-3">
           <div class="card-body">
-            <h4>
+            <h4 class="d-flex">
               Stats
               <small if={ state.count } class="ml-auto">
                 { state.count.toLocaleString() } Items
@@ -49,7 +49,7 @@
         </div>
         <div class="column-body">
           <div class="column-body-inner mx--1">
-            <div class="card bg-transparent px-1" if={ connection }>
+            <div class="px-1" if={ connection }>
               <div if={ loading('items') } class="text-center">
                 <i class="fa fa-spinner fa-spin h1" />
               </div>
