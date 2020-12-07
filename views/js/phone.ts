@@ -181,11 +181,12 @@ class PhoneModule extends EventEmitter {
     
     // create call event
     conn.event = await this.event(props, {
+      item,
+
       to    : number,
       from  : conn.number,
       time  : new Date(),
       type  : `call:${conn.call.type}`,
-      item  : item.get('_id'),
       title : `Called ${number}`,
     });
 
@@ -206,24 +207,42 @@ class PhoneModule extends EventEmitter {
     conn.conn.on('disconnect', async () => {
       // get fields
       const fields = this.fields(props);
+
+      // get fields
       const time = this.field(props, 'time', fields);
+      const duration = this.field(props, 'duration', fields);
+      const eventDuration = context.fields.find((f) => f.uuid === page.get('data.field.duration'));
 
       // unset call
       conn.call = null;
       conn.conn = null;
 
+      // let save item
+      let saveItem = false;
+
       // duration
       if (time) {
         // set duration
-        conn.event.set('duration', (new Date().getTime() - new Date(conn.event.get(time.name || time.uuid)).getTime()));
+        conn.event.set(duration.name || duration.uuid, (new Date().getTime() - new Date(conn.event.get(time.name || time.uuid)).getTime()));
         conn.event.save();
+
+        // add to event
+        if (eventDuration) {
+          // set duration
+          item.set(eventDuration.name || eventDuration.uuid, (item.get(eventDuration.name || eventDuration.uuid) || 0) + conn.event.get('duration'));
+          saveItem = true;
+        }
+        
 
         // check duration
         if (userField && conn.event.get('duration') > (30 * 1000)) {
           // auto assign
           item.set(userField.name || userField.uuid, dashup.get('_meta.member'));
-          item.save();
+          saveItem = true;
         }
+
+        // save item
+        if (saveItem) item.save();
       }
 
       // check status
@@ -277,10 +296,10 @@ class PhoneModule extends EventEmitter {
     // add event
     await this.event(props, {
       body,
+      item,
       to    : number,
       from  : conn.number,
       type  : 'sms:outbound',
-      item  : item.get('_id'),
       time  : new Date(),
       title : `Sent SMS To ${number}`,
     });
@@ -300,6 +319,16 @@ class PhoneModule extends EventEmitter {
     conn.item = item;
     this.emit('update');
     this.emit('item', conn.item);
+
+    // check state
+    const state = Object.assign({}, {
+      prevent : true,
+    }, eden.router.history.location.state);
+
+    // replace history
+    eden.router.history.replace({
+      pathname : `/app/${props.page.get('_id')}/${item.get('_id')}`,
+    }, state);
   }
 
   /**
@@ -510,6 +539,9 @@ class PhoneModule extends EventEmitter {
     // destruct
     const { _id, title, from, to, type, item, body, time, duration } = opts;
 
+    // get item id
+    const itemID = item.get('_id');
+
     // get fields
     const fields = this.fields(props);
 
@@ -536,7 +568,7 @@ class PhoneModule extends EventEmitter {
 
       [toField.name || toField.uuid] : to,
       [fromField.name || fromField.uuid] : from,
-      [itemField.name || itemField.uuid] : item,
+      [itemField.name || itemField.uuid] : itemID,
       [userField.name || userField.uuid] : props.dashup.get('_meta.member'),
       [typeField.name || typeField.uuid] : type,
       [bodyField.name || bodyField.uuid] : body,
@@ -558,20 +590,20 @@ class PhoneModule extends EventEmitter {
   /**
    * get field
    */
-  field(props, name, fields) {
+  field(props, name, fields, contact = false) {
     // return value
     return fields.find((field) => {
       // return fields
-      return field.uuid === props.page.get(`data.event.${name}`);
+      return field.uuid === props.page.get(`data.${contact ? 'field.' : 'event.'}${name}`);
     });
   }
 
   /**
    * get fields
    */
-  fields(props) {
+  fields(props, contact = false) {
     // reduce
-    return [props.page.get('data.event.form')].filter((i) => i).reduce((accum, id) => {
+    return contact ? props.context.fields : [props.page.get('data.event.form')].filter((i) => i).reduce((accum, id) => {
       // get page
       const page = props.dashup.page(id);
 

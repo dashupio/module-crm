@@ -372,6 +372,15 @@
             suppressScrollX : true,
           });
         }
+
+        // current
+        if (!this.shownFirst && this.props.current) {
+          // shown first
+          this.shownFirst = true;
+
+          // do item
+          this.phone.item(this.props, this.props.current);
+        }
       }
 
       /**
@@ -814,8 +823,8 @@
         // add event
         await this.phone.event(this.props, {
           body,
+          item  : this.connection.item,
           type  : 'note',
-          item  : this.connection.item.get('_id'),
           time  : new Date(),
           title : 'Added Note',
         });
@@ -981,7 +990,7 @@
           await this.phone.event(this.props, {
             body,
             type  : 'note',
-            item  : this.connection.item.get('_id'),
+            item  : this.connection.item,
             time  : new Date(),
             title : 'Added Note',
           });
