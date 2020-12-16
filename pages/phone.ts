@@ -271,6 +271,9 @@ export default class PhonePage extends Struct {
    * @param data 
    */
   async purchaseAction(opts, id) {
+    // domain
+    const domain = this.dashup.config.url.includes('.dev') ? 'dashup.dev' : 'dashup.io';
+
     // query model
     const order = await new Query({
       ...opts,
@@ -307,8 +310,8 @@ export default class PhonePage extends Struct {
       // purchase number
       purchase = await client.incomingPhoneNumbers
         .create({
-          smsUrl      : `${this.dashup.config.url}/api/sms/incoming`,
-          voiceUrl    : `${this.dashup.config.url}/api/call/incoming`,
+          smsUrl      : `https://${domain}/api/sms/incoming`,
+          voiceUrl    : `https://${domain}/api/call/incoming`,
           phoneNumber : order.get('order.products.0.opts.number.phoneNumber'),
         });
     } catch (e) {
