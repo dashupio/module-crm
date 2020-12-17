@@ -183,6 +183,7 @@
         }).findOne();
 
         // add
+        await eden.guest.page('5fa8f18e5cc2fcc84ff61ebb').remove(actualNumber);
         await eden.guest.page('5fa8f18e5cc2fcc84ff61ebb').add(actualNumber, 1, {
           page   : this.props.page.get('_id'),
           dashup : this.props.dashup.get('_id'),

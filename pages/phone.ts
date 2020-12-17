@@ -280,6 +280,7 @@ export default class PhonePage extends Struct {
 
       form   : '5fa8f1ba5cc2fcc84ff61ec4',
       page   : '5fa8f1ad5cc2fcc84ff61ec0',
+      model  : '5fa8f1ad5cc2fcc84ff61ec0',
       dashup : '5efdbeafdd5a8af0344187ed',
     }, 'model').findById(id);
 
@@ -334,6 +335,7 @@ export default class PhonePage extends Struct {
 
       form   : '5fa8f1ba5cc2fcc84ff61ec4',
       page   : '5fa8f1ad5cc2fcc84ff61ec0',
+      model  : '5fa8f1ad5cc2fcc84ff61ec0',
       dashup : '5efdbeafdd5a8af0344187ed',
     });
 
