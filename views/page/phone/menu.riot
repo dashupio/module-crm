@@ -105,6 +105,32 @@
     <!-- / CREATE -->
 
     <!-- DISPLAY -->
+    <div if={ connection && connection.call } class="dropdown d-inline-block" data-toggle="tooltip" title="Show Keypad">
+      <button class="btn btn-light" data-toggle="dropdown">
+        <i class="fat fa-phone-office" />
+      </button>
+      <div class="dropdown-menu dropdown-menu-right">
+        <div class="card card-sm card-tags m-0">
+          <div class="card-body">
+            <div class="row g-0">
+              <div each={ (btn, i) in buttons } class="col-4 d-flex" onclick={ (e) => onPress(e, btn.btn) }>
+                <button class="btn px-0 w-100 btn-lg btn-light">
+                  <div class="h1">
+                    { btn.btn }
+                  </div>
+                  <small class="d-block">
+                    { btn.sub || ' ' }
+                  </small>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- / DISPLAY -->
+
+    <!-- DISPLAY -->
     <button class="btn btn-light" onclick={ (e) => onDisplay(e) } data-toggle="tooltip" title="Toggle View">
       <i class={ `fat fa-${props.page.get('user.display') === 'grid' ? 'columns' : 'th'}` } />
     </button>
@@ -147,6 +173,54 @@
           'ringing'    : 'primary',
           'connecting' : 'info',
         };
+        this.buttons = [
+          {
+            btn : 1,
+            sub : '',
+          },
+          {
+            btn : 2,
+            sub : 'ABC',
+          },
+          {
+            btn : 3,
+            sub : 'DEF',
+          },
+          {
+            btn : 4,
+            sub : 'GHI',
+          },
+          {
+            btn : 5,
+            sub : 'JKL',
+          },
+          {
+            btn : 6,
+            sub : 'MNO',
+          },
+          {
+            btn : 7,
+            sub : 'PQRS',
+          },
+          {
+            btn : 8,
+            sub : 'TUV',
+          },
+          {
+            btn : 9,
+            sub : 'WXYZ',
+          },
+          {
+            btn : '*',
+          },
+          {
+            btn : 0,
+            sub : '+',
+          },
+          {
+            btn : '#',
+          }
+        ];
         this.ucfirst = (str) => {
           // return
           return str.charAt(0).toUpperCase() + str.slice(1);
@@ -264,6 +338,18 @@
 
         // set in props
         this.phone.dialer(this.props, uuid());
+      }
+
+      /**
+       * on press
+       */
+      onPress(e, btn) {
+        // prevent default
+        e.preventDefault();
+        e.stopPropagation();
+
+        // set in props
+        this.phone.press(this.props, `${btn}`);
       }
 
       /**

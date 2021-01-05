@@ -337,6 +337,23 @@ class PhoneModule extends EventEmitter {
    * @param props 
    * @param number 
    */
+  press(props, btn) {
+    // connection
+    const conn = this.connections.get(props.page.get('_id'));
+
+    // check connection
+    if (!conn.conn) return;
+    
+    // send number
+    conn.conn.sendDigits(btn);
+  }
+
+  /**
+   * set number
+   *
+   * @param props 
+   * @param number 
+   */
   number(props, number) {
     // connection
     const conn = this.connections.get(props.page.get('_id'));
