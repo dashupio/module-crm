@@ -117,28 +117,28 @@
           </div>
           <div class="col">
             <div class="mb-3 d-flex">
-              <button class={ `btn mr-2 btn-${state.tab === 'script' ? '' : 'outline-'}primary` } onclick={ (e) => onTab(e, 'script') }>
+              <button class={ `btn mr-2 btn-${state.tab === 'script' ? 'dark' : 'light'}` } onclick={ (e) => onTab(e, 'script') }>
                 Script
               </button>
-              <button class={ `btn mr-2 btn-${state.tab === 'history' ? '' : 'outline-'}primary` } onclick={ (e) => onTab(e, 'history') }>
+              <button class={ `btn mr-2 btn-${state.tab === 'history' ? 'dark' : 'light'}` } onclick={ (e) => onTab(e, 'history') }>
                 { state.tab === 'history' ? 'My History' : 'Lead History' }
               </button>
 
               <div class="ml-auto">
-                <button if={ getEmail() } class={ `btn mr-2 btn-${state.tab === 'email' ? '' : 'outline-'}primary${getValue('email') ? '' : ' disabled'}` } onclick={ (e) => onTab(e, 'email') }>
-                  <i class="fa fa-envelope mr-2" />
+                <button if={ getEmail() } class={ `btn mr-2 btn-${state.tab === 'email' ? 'dark' : 'light'}${getValue('email') ? '' : ' disabled'}` } onclick={ (e) => onTab(e, 'email') }>
+                  <i class="fat fa-envelope mr-2" />
                   Email
                 </button>
-                <button class={ `btn mr-2 btn-${state.tab === 'note' ? '' : 'outline-'}primary` } onclick={ (e) => onTab(e, 'note') }>
-                  <i class="fa fa-file mr-2" />
+                <button class={ `btn mr-2 btn-${state.tab === 'note' ? 'dark' : 'light'}` } onclick={ (e) => onTab(e, 'note') }>
+                  <i class="fat fa-file mr-2" />
                   Note
                 </button>
-                <button class={ `btn mr-2 btn-${state.tab === 'sms' ? '' : 'outline-'}primary` } onclick={ (e) => onTab(e, 'sms') }>
-                  <i class="fa fa-comments mr-2" />
+                <button class={ `btn mr-2 btn-${state.tab === 'sms' ? 'dark' : 'light'}` } onclick={ (e) => onTab(e, 'sms') }>
+                  <i class="fat fa-comments mr-2" />
                   SMS
                 </button>
-                <button class={ `btn btn-${props.call ? '' : 'outline-'}primary` } onclick={ (e) => onCall(e) }>
-                  <i class="fa fa-phone mr-2" />
+                <button class={ `btn btn-${props.call ? 'dark' : 'light'}` } onclick={ (e) => onCall(e) }>
+                  <i class="fat fa-phone mr-2" />
                   Call
                 </button>
               </div>
@@ -195,14 +195,14 @@
               <page-phone-event each={ (event, i) in state.history } event={ event } phone={ phone } { ...getProps() } />
             </div>
 
-            <div if={ state.tab === 'script' } class="card">
-              <div class="card-body">
-                <button each={ (script, i) in getScripts() } class={ `btn btn-${state.script && state.script.id === script.id ? 'primary' : 'secondary'} mr-2 mb-2` } onclick={ (e) => onScript(e, script) }>
-                  { script.name || 'N/A' }
-                </button>
-              </div>
-              <div if={ state.script } class="card-body">
-                <hbs class="ql-editor p-0 m-0" template={ state.script.text || '' } data={ connection && connection.item ? connection.item.get() : {} } />
+            <div if={ state.tab === 'script' }>
+              <button each={ (script, i) in getScripts() } class={ `btn btn-${state.script && state.script.id === script.id ? 'dark' : 'light'} mr-2 mb-2` } onclick={ (e) => onScript(e, script) }>
+                { script.name || 'N/A' }
+              </button>
+              <div class="card mt-3" if={ state.script }>
+                <div class="card-body">
+                  <hbs class="ql-editor p-0 m-0" template={ state.script.text || '' } data={ connection && connection.item ? connection.item.get() : {} } />
+                </div>
               </div>
             </div>
           </div>

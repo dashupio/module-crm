@@ -18,7 +18,7 @@
 
     <!-- STATUS -->
     <button if={ connection && connection.number && !connection.call } class={ `btn mr-2 btn-${status[connection.status || 'connecting']}` } data-toggle="tooltip" title="Connection Status">
-      <i class="fa fa-plug mr-2" />
+      <i class="fat fa-plug mr-2" />
       { ucfirst(connection.status || 'connecting') }
     </button>
     <button if={ connection && connection.call } class="btn btn-link mr-2" data-toggle="tooltip" title="Call Time">
@@ -47,10 +47,10 @@
     <!-- CALL METHODS -->
     <div if={ connection && connection.call && (connection.call.type !== 'incoming' || connection.call.answered) } class="btn-group mr-1">
       <button class={ `btn btn-${connection.call.muted ? 'danger' : 'success'}` } onclick={ (e) => onMute(e) } data-toggle="tooltip" title="Mute Call">
-        <i class={ `fa fa-${connection.call.muted ? 'volume-mute' : 'volume'}` } />
+        <i class={ `fat fa-${connection.call.muted ? 'volume-mute' : 'volume'}` } />
       </button>
       <button class="btn btn-danger" onclick={ (e) => onEnd(e) } data-toggle="tooltip" title="End Call">
-        <i class={ `fa fa-times` } />
+        <i class={ `fat fa-times` } />
       </button>
     </div>
     <!-- / CALL METHODS -->
@@ -58,6 +58,7 @@
     <!-- POWER DIALLER -->
     <div if={ connection } class="btn-group mr-2">
       <button if={ !connection.dialer } class="btn btn-primary" onclick={ (e) => onDialer(e) } data-toggle="tooltip" title="Start Dialer">
+        <i class="fat fa-play mr-2" />
         Start Dialer
       </button>
       <button if={ connection.dialer } class="btn btn-primary" data-toggle="tooltip" title="Dialer Status">
@@ -84,12 +85,12 @@
     
     <!-- CREATE -->
     <template if={ props.page.get('data.model') && props.dashup.page(props.page.get('data.model')) }>
-      <button if={ props.dashup.can(props.page, 'submit') && !props.page.get('data.forms.1') } class="btn btn-primary mr-2" type="button" onclick={ (e) => props.onItem(e) }>
+      <button if={ props.dashup.can(props.page, 'submit') && !props.page.get('data.forms.1') } class="btn btn-dark mr-2" type="button" onclick={ (e) => props.onItem(e) }>
         <i class="fat fa-plus mr-2" />
         { props.dashup.page(props.page.get('data.model')).get('name') }
       </button>
       <div if={ props.dashup.can(props.page, 'submit') && props.page.get('data.forms.1') } class="btn-group dropdown mr-2">
-        <button class="btn btn-primary dropdown-toggle" type="button" id="dropdown-add" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        <button class="btn btn-dark dropdown-toggle" type="button" id="dropdown-add" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
           <i class="fat fa-plus mr-2" />
           { props.dashup.page(props.page.get('data.model')).get('name') }
         </button>
@@ -104,7 +105,7 @@
     <!-- / CREATE -->
 
     <!-- DISPLAY -->
-    <button class="btn btn-link text-dark" onclick={ (e) => onDisplay(e) } data-toggle="tooltip" title="Toggle View">
+    <button class="btn btn-light" onclick={ (e) => onDisplay(e) } data-toggle="tooltip" title="Toggle View">
       <i class={ `fat fa-${props.page.get('user.display') === 'grid' ? 'columns' : 'th'}` } />
     </button>
     <!-- / DISPLAY -->
