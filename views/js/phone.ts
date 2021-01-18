@@ -61,14 +61,29 @@ class PhoneModule extends EventEmitter {
       device : new Device(),
       status : 'connecting',
     });
+
+    // create conn
     const conn = this.connections.get(props.page.get('_id'));
     
     // update
     const { token } = await props.page.action('auth');
 
     // setup
-    conn.device.setup(token, {
-      debug : true,
+    await conn.device.setup(token, {
+      debug            : false,
+      enableIceRestart : true,
+      codecPreferences : ['opus', 'pcmu'],
+    });
+
+    // get mic
+    await conn.device.audio.setAudioConstraints({
+      latency : 0,
+      sampleRate : 48000,
+      sampleSize : 16,
+      channelCount : 2,
+      autoGainControl : false,
+      echoCancellation : false,
+      noiseSuppression : false,
     });
 
     // setup
@@ -224,7 +239,7 @@ class PhoneModule extends EventEmitter {
       if (time) {
         // set duration
         conn.event.set(duration.name || duration.uuid, (new Date().getTime() - new Date(conn.event.get(time.name || time.uuid)).getTime()));
-        conn.event.save();
+        await conn.event.save();
 
         // add to event
         if (eventDuration) {
@@ -242,7 +257,7 @@ class PhoneModule extends EventEmitter {
         }
 
         // save item
-        if (saveItem) item.save();
+        if (saveItem) await item.save();
       }
 
       // check status

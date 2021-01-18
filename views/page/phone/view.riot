@@ -1,12 +1,20 @@
 <page-phone-view>
 
   <div class="d-flex flex-column flex-1">
+    <a if={ !props.page.get('data.model') } href="#!" class="d-block alert alert-info mb-3" onclick={ (e) => props.onConfig(e) }>
+      <i class="fa fa-exclamation-triangle mr-2" />
+      Please select a <b>model</b> for this page.
+    </a>
+    <a if={ !props.page.get('data.forms.0') } href="#!" class="d-block alert alert-info mb-3" onclick={ (e) => props.onConfig(e) }>
+      <i class="fa fa-exclamation-triangle mr-2" />
+      Please select at least one <b>form</b> for this page.
+    </a>
 
     <!-- LIST VIEW -->
-    <div class="row g-0 flex-1">
+    <div if={ props.page.get('data.forms.0') && props.page.get('data.model') } class="row g-0 flex-1">
 
       <!-- GRID VIEW -->
-      <div if={ props.page.get('data.forms.0') } class={ `col-lg-12 dashup-grid${props.page.get('user.display') !== 'grid' ? ' d-none' : ''}` }>
+      <div class={ `col-lg-12 dashup-grid${props.page.get('user.display') !== 'grid' ? ' d-none' : ''}` }>
         <dashup-view view="grid" type="page" struct="grid" ref={ ref('grid') } model={ props.page.get('data.model') } fields={ props.context.fields } get-field={ getFieldType } on-items={ onItems } { ...getProps() } />
       </div>
       <!-- / GRID VIEW -->
@@ -335,6 +343,7 @@
         // listeners
         this.props.page.on('reload', this.safeUpdate);
         this.props.page.on('data.view', this.safeUpdate);
+        this.props.page.on('data.model', this.safeUpdate);
         this.props.page.on('data.forms', this.safeUpdate);
         this.props.page.on('data.display', this.safeUpdate);
 
@@ -396,6 +405,7 @@
         // listeners
         this.props.page.removeListener('reload', this.safeUpdate);
         this.props.page.removeListener('data.view', this.safeUpdate);
+        this.props.page.removeListener('data.model', this.safeUpdate);
         this.props.page.removeListener('data.forms', this.safeUpdate);
         this.props.page.removeListener('data.display', this.safeUpdate);
 
