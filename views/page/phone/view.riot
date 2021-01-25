@@ -9,7 +9,7 @@
       <i class="fa fa-exclamation-triangle mr-2" />
       Please select at least one <b>form</b> for this page.
     </a>
-    <a if={ collection && !connection.number } href="#!" class="d-block alert alert-info mb-3" onclick={ (e) => props.onConfig(e) }>
+    <a if={ connection && !connection.number } href="#!" class="d-block alert alert-info mb-3" onclick={ (e) => props.onConfig(e) }>
       <i class="fa fa-exclamation-triangle mr-2" />
       Please buy or select a <b>number</b> for this page.
     </a>
