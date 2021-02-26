@@ -22,19 +22,21 @@ class PhoneModule extends EventEmitter {
     this.__status = setInterval(() => {
       // connection values
       Array.from(this.connections.values()).forEach((connection) => {
-        // check status
-        if (connection.device.status() !== connection.status) {
-          // set status
-          connection.status = connection.device.status();
-          this.emit('update');
-        }
+        try {
+          // check status
+          if (connection.device.status() !== connection.status) {
+            // set status
+            connection.status = connection.device.status();
+            this.emit('update');
+          }
 
-        // set status
-        if (connection.call && connection.conn && connection.conn.status() !== connection.call.status) {
           // set status
-          connection.call.status = connection.conn.status();
-          this.emit('update');
-        }
+          if (connection.call && connection.conn && connection.conn.status() !== connection.call.status) {
+            // set status
+            connection.call.status = connection.conn.status();
+            this.emit('update');
+          }
+        } catch (e) {}
       });
     }, 1000);
   }
@@ -70,20 +72,7 @@ class PhoneModule extends EventEmitter {
 
     // setup
     await conn.device.setup(token, {
-      debug            : false,
-      enableIceRestart : true,
-      codecPreferences : ['opus', 'pcmu'],
-    });
-
-    // get mic
-    await conn.device.audio.setAudioConstraints({
-      latency : 0,
-      sampleRate : 48000,
-      sampleSize : 16,
-      channelCount : 2,
-      autoGainControl : false,
-      echoCancellation : false,
-      noiseSuppression : false,
+      debug : false,
     });
 
     // setup
@@ -224,9 +213,8 @@ class PhoneModule extends EventEmitter {
       const fields = this.fields(props);
 
       // get fields
-      const time = this.field(props, 'time', fields);
-      const duration = this.field(props, 'duration', fields);
-      const eventDuration = context.fields.find((f) => f.uuid === page.get('data.field.duration'));
+      const date = this.field(props, 'date', fields);
+      const eventDuration = context.fields.find((f) => f.uuid === page.get('data.field.date'));
 
       // unset call
       conn.call = null;
@@ -236,18 +224,21 @@ class PhoneModule extends EventEmitter {
       let saveItem = false;
 
       // duration
-      if (time) {
+      if (date) {
+        // duration
+        const duration = (new Date().getTime() - new Date(conn.event.get(`${date.name || date.uuid}.start`)).getTime());
+
         // set duration
-        conn.event.set(duration.name || duration.uuid, (new Date().getTime() - new Date(conn.event.get(time.name || time.uuid)).getTime()));
+        conn.event.set(`${date.name || date.uuid}.dur.type`, 'until');
+        conn.event.set(`${date.name || date.uuid}.duration`, duration);
         await conn.event.save();
 
         // add to event
         if (eventDuration) {
           // set duration
-          item.set(eventDuration.name || eventDuration.uuid, (item.get(eventDuration.name || eventDuration.uuid) || 0) + conn.event.get('duration'));
+          item.set(eventDuration.name || eventDuration.uuid, (item.get(eventDuration.name || eventDuration.uuid) || 0) + conn.event.get(`${date.name || date.uuid}.duration`));
           saveItem = true;
         }
-        
 
         // check duration
         if (userField && conn.event.get('duration') > (30 * 1000)) {
@@ -518,44 +509,51 @@ class PhoneModule extends EventEmitter {
 
     // fields
     const typeField = this.field(props, 'type', fields);
-    const timeField = this.field(props, 'time', fields);
     const userField = this.field(props, 'user', fields);
-    const durationField = this.field(props, 'duration', fields);
+    const dateField = this.field(props, 'date', fields);
+
+    // return
+    if (!dateField || !typeField || !userField) return {};
 
     // page
     const eventPage = props.dashup.page(eventModel);
+
+    // get ids
+    const typeId = typeField.name || typeField.uuid;
+    const userId = userField.name || userField.uuid;
+    const dateId = dateField.name || dateField.uuid;
 
     // update
     return {
       stats : {
         calls : {
-          avg : await eventPage.gt(timeField.name || timeField.uuid, yesterday).or({
-            [typeField.name || typeField.uuid] : 'call:outbound',
+          avg : await eventPage.gt(`${dateId}.start`, yesterday).or({
+            [typeId] : 'call:outbound',
           }, {
-            [typeField.name || typeField.uuid] : 'call:inbound',
-          }).avg(null, userField.name || userField.uuid),
-          total : await eventPage.gt(timeField.name || timeField.uuid, yesterday).where({
-            [userField.name || userField.uuid] : props.dashup.get('_meta.member'),
+            [typeId] : 'call:inbound',
+          }).avg(null, userId),
+          total : await eventPage.gt(`${dateId}.start`, yesterday).where({
+            [userId] : props.dashup.get('_meta.member'),
           }).or({
-            [typeField.name || typeField.uuid] : 'call:outbound',
+            [typeId] : 'call:outbound',
           }, {
-            [typeField.name || typeField.uuid] : 'call:inbound',
+            [typeId] : 'call:inbound',
           }).count(),
         },
         duration : {
-          avg : await eventPage.gt(timeField.name || timeField.uuid, yesterday)
-            .gt(durationField.name || durationField.uuid, 0).or({
-            [typeField.name || typeField.uuid] : 'call:outbound',
+          avg : await eventPage.gt(`${dateId}.start`, yesterday)
+            .gt(`${dateId}.duration`, 0).or({
+            [typeId] : 'call:outbound',
           }, {
-            [typeField.name || typeField.uuid] : 'call:inbound',
-          }).avg(durationField.name || durationField.uuid, userField.name || userField.uuid),
-          total : await eventPage.gt(timeField.name || timeField.uuid, yesterday).where({
-            [userField.name || userField.uuid] : props.dashup.get('_meta.member'),
-          }).gt(durationField.name || durationField.uuid, 0).or({
-            [typeField.name || typeField.uuid] : 'call:outbound',
+            [typeId] : 'call:inbound',
+          }).avg(`${dateId}.duration`, userId),
+          total : await eventPage.gt(`${dateId}.start`, yesterday).where({
+            [userId] : props.dashup.get('_meta.member'),
+          }).gt(`${dateId}.duration`, 0).or({
+            [typeId] : 'call:outbound',
           }, {
-            [typeField.name || typeField.uuid] : 'call:inbound',
-          }).sum(durationField.name || durationField.uuid),
+            [typeId] : 'call:inbound',
+          }).sum(`${dateId}.duration`),
         }
       },
     }
@@ -582,11 +580,10 @@ class PhoneModule extends EventEmitter {
     const typeField = this.field(props, 'type', fields) || {};
     const itemField = this.field(props, 'item', fields) || {};
     const bodyField = this.field(props, 'body', fields) || {};
-    const timeField = this.field(props, 'time', fields) || {};
+    const dateField = this.field(props, 'date', fields) || {};
     const userField = this.field(props, 'user', fields) || {};
     const fromField = this.field(props, 'from', fields) || {};
     const titleField = this.field(props, 'title', fields) || {};
-    const durationField = this.field(props, 'duration', fields) || {};
 
     // create event
     const newEvent = await props.dashup.action({
@@ -604,9 +601,14 @@ class PhoneModule extends EventEmitter {
       [userField.name || userField.uuid] : props.dashup.get('_meta.member'),
       [typeField.name || typeField.uuid] : type,
       [bodyField.name || bodyField.uuid] : body,
-      [timeField.name || timeField.uuid] : time,
+      [dateField.name || dateField.uuid] : {
+        start : time,
+        duration,
+        dur : {
+          type : 'until',
+        },
+      },
       [titleField.name || titleField.uuid] : title,
-      [durationField.name || durationField.uuid] : duration,
     });
 
     // event

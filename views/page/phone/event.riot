@@ -19,11 +19,11 @@
           { getValue('body') }
         </p>
         <small>
-          { moment(getValue('time')).format('Do MMM, h:mma') }
+          { moment(getValue('date')).format('Do MMM, h:mma') }
         </small>
-        <small if={ getValue('duration') } class="ml-2">
+        <small if={ dotProp.get(getValue('date'), 'duration') } class="ml-2">
           <b>
-            { new Date(getValue('duration')).toISOString().substr(11, 8) }
+            { new Date(dotProp.get(getValue('date'), 'duration')).toISOString().substr(11, 8) }
           </b>
         </small>
         <div if={ hasTags() } class="tags mt-2">
@@ -188,8 +188,14 @@
         // fields
         this.fields = this.fields || this.props.phone.fields(this.props);
 
+        // field
+        const field = this.props.phone.field(this.props, name, this.fields);
+
+        // return
+        if (!field) return;
+
         // get value
-        return this.props.event.get(this.props.phone.field(this.props, name, this.fields).name || this.props.phone.field(this.props, name, this.fields).uuid);
+        return this.props.event.get(field.name || field.uuid);
       }
 
       /**
