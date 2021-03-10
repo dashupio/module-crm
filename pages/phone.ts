@@ -168,17 +168,16 @@ export default class PhonePage extends Struct {
   async listAction(opts) {
     // query model
     const numbers = await new Query({
-      ...opts,
-
       form   : '5fa8f1ba5cc2fcc84ff61ec4',
       page   : '5fa8f1ad5cc2fcc84ff61ec0',
       dashup : '5efdbeafdd5a8af0344187ed',
     }, 'model').where({
-    //  page   : opts.page,
       dashup : opts.dashup,
     }).ne('phone', null).where({
       'order.payments.0.status' : 'active',
     }).find();
+
+    console.log(opts, numbers);
 
     // return data
     return (numbers || []).map((number) => {
