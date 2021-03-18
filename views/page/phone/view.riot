@@ -17,7 +17,9 @@
     <!-- / CHECKS -->
 
     <!-- DASHBOARD -->
-    <dashup-view if={ props.page.get('data.model') } preview={ !props.altering } view="dashboard" type="page" struct="dashboard" blocks={ getBlocks() } on-select={ (item) => onSelect(item) } is-selected={ (item) => isSelected(item) } phone={ phone } connection={ connection } { ...getProps() } />
+    <template if={ props.page.get('data.model') && props.page.get('data.forms.0') }>
+      <dashup-view preview={ !props.altering } view="dashboard" type="page" struct="dashboard" blocks={ getBlocks() } on-select={ (item) => onSelect(item) } is-selected={ (item) => isSelected(item) } phone={ phone } connection={ connection } { ...getProps() } />
+    </template>
     <!-- / DASHBOARD -->
 
     <!-- MODAL -->
@@ -114,7 +116,7 @@
         };
 
         // default blocks
-        const defaultBlocks = [
+        this.defaultBlocks = [
           {
             uuid  : uuid(),
             type  : 'card',
@@ -172,7 +174,8 @@
         // check page
         if (!this.props.page.get('data.blocks')) {
           // set
-          this.props.page.set('data.blocks', defaultBlocks);
+          this.props.page.set('data.blocks', this.defaultBlocks);
+          this.props.data('blocks', this.defaultBlocks);
         }
 
         // on item
