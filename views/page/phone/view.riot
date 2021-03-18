@@ -1,6 +1,7 @@
 <page-phone-view>
 
   <div class="d-flex flex-column flex-1">
+    <!-- CHECKS -->
     <a if={ !props.page.get('data.model') } href="#!" class="d-block alert alert-info mb-3" onclick={ (e) => props.onConfig(e) }>
       <i class="fa fa-exclamation-triangle mr-2" />
       Please select a <b>model</b> for this page.
@@ -13,215 +14,11 @@
       <i class="fa fa-exclamation-triangle mr-2" />
       Please buy or select a <b>number</b> for this page.
     </a>
+    <!-- / CHECKS -->
 
-    <!-- LIST VIEW -->
-    <div if={ props.page.get('data.forms.0') && props.page.get('data.model') } class="row g-0 flex-1">
-
-      <!-- GRID VIEW -->
-      <div class={ `col-lg-12 dashup-grid${props.page.get('user.display') !== 'grid' ? ' d-none' : ''}` }>
-        <dashup-view view="grid" type="page" struct="grid" ref={ ref('grid') } model={ props.page.get('data.model') } fields={ props.context.fields } get-field={ getFieldType } on-items={ onItems } { ...getProps() } />
-      </div>
-      <!-- / GRID VIEW -->
-
-      <!-- CHAT LIST -->
-      <div class={ `col chat-column mb-4 mb-lg-0${props.page.get('user.display') === 'grid' ? ' d-none' : ''}` }>
-        <div class="card mb-3">
-          <div class="card-body">
-            <h4 class="d-flex">
-              Stats
-              <small if={ state.count } class="ml-auto">
-                { state.count.toLocaleString() } Items
-              </small>
-            </h4>
-
-            <!-- total calls -->
-            <label class="form-label d-flex">
-              <b class="mr-2">{ state.stats.calls.total }</b>Calls (24h)
-              <span class="ml-auto">
-                <b class="mr-2">{ state.stats.calls.avg }</b>Avg
-              </span>
-            </label>
-            <div class="progress bg-primary mb-2">
-              <div class="progress-bar bg-success" role="progressbar" aria-valuenow={ getPercent(state.stats.calls.total, state.stats.calls.avg) } style={ `width:${getPercent(state.stats.calls.total, state.stats.calls.avg)}%` } aria-valuemin="0" aria-valuemax="100"></div>
-            </div>
-            <!-- / total calls -->
-
-            <!-- total calls -->
-            <label class="form-label d-flex">
-              <b class="mr-2">{ new Date(state.stats.duration.total).toISOString().substr(11, 8) }</b>Duration (24h)
-              <span class="ml-auto">
-                <b class="mr-2">{ new Date(state.stats.duration.avg).toISOString().substr(11, 8) }</b>Avg
-              </span>
-            </label>
-            <div class="progress bg-primary">
-              <div class="progress-bar bg-success" role="progressbar" aria-valuenow={ getPercent(state.stats.duration.total, state.stats.duration.avg) } style={ `width:${getPercent(state.stats.duration.total, state.stats.duration.avg)}%` } aria-valuemin="0" aria-valuemax="100"></div>
-            </div>
-            <!-- / total calls -->
-          </div>
-        </div>
-        <div class="column-body">
-          <div class="column-body-inner mx--1">
-            <div class="px-1" if={ connection }>
-              <div if={ loading('items') } class="text-center">
-                <i class="fa fa-spinner fa-spin h1" />
-              </div>
-              <div if={ !loading('items') } class="task-container w-100">
-                <button if={ hasPrev() } class={ `btn mb-3 btn-sm btn-block btn-primary${loading('items') ? ' disabled' : ''}` } onclick={ (e) => onPrev(e) }>
-                  { loading('items') ? 'Loading...' : 'Previous' }
-                </button>
-                <page-phone-task each={ (item, i) in connection.items } phone={ phone } item={ item } page={ props.page } form-fields={ props.context.fields } add-user={ props.addUser } add-tag={ props.addTag } on-item={ (e) => props.onItem(e, item) } on-click={ (e) => connection && connection.item && connection.item.get('_id') === item.get('_id') ? props.onItem(e, item) : onClick(e, item) } class={ classes({ 'active' : connection && connection.item && connection.item.get('_id') === item.get('_id') }) } />
-                <button if={ hasNext() } class={ `btn mt-3 btn-sm btn-block btn-primary${loading('items') ? ' disabled' : ''}` } onclick={ (e) => onNext(e) }>
-                  { loading('items') ? 'Loading...' : 'Next' }
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <!-- / CHAT LIST -->
-
-      <!-- CHAT BODY -->
-      <div class="col d-flex flex-column ml-3" if={ loading('item') }>
-        <div class="mx-auto my-5">
-          <i class="fa fa-spinner fa-spin h1" />
-        </div>
-      </div>
-      <!-- / CHAT BODY -->
-
-      <!-- CHAT MAIN -->
-      <div if={ connection && connection.item && !loading('item') } class={ `col d-flex flex-column ml-3${props.page.get('user.display') === 'grid' ? ' d-none' : ''}` }>
-        <div class="row">
-          <div class="col-lg-5">
-            <div class="card mb-3">
-              <div class="card-body">
-                <hbs template={ props.page.get('data.view') || props.page.get('data.display') || '' } data={ connection && connection.item ? connection.item.get() : {} } />
-              </div>
-            </div>
-            <div class="card" if={ getForm() }>
-              <div class="card-header pt-3 pb-0 d-flex justify-content-end" if={ props.page.get('data.forms.1') }>
-                <div class="btn-group dropdown">
-                  <button class="btn btn-primary dropdown-toggle" type="button" id="dropdown-add" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    <i class="fa fa-plus mr-2" />
-                    { getForm().get('name') }
-                  </button>
-
-                  <div class="dropdown-menu" aria-labelledby="dropdown-add">
-                    <button each={ (form, i) in props.page.get('data.forms') } class="dropdown-item" onclick={ (e) => onForm(e, form) }>
-                      { props.dashup.page(form).get('name') }
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div class="card-body">
-                <dashup-view ref={ ref('form') } view="form" type="page" struct="form" item={ connection && connection.item } preview={ true } page={ getForm() } on-data={ (k, v) => onData(k, v) } on-submit={ (e, d) => onSubmit(e, d) } { ...getProps(true) } />
-              </div>
-
-              <div class="card-footer text-right pt-0 pb-3">
-                <button if={ !loading('submit') } class="btn btn-success" onclick={ (e) => onSubmit(e) }>
-                  Update
-                </button>
-                <button if={ loading('submit') } class="btn btn-success disabled">
-                  Updating...
-                </button>
-              </div>
-            </div>
-          </div>
-          <div class="col">
-            <div class="mb-3 d-flex">
-              <button class={ `btn mr-2 btn-${state.tab === 'script' ? 'dark' : 'light'}` } onclick={ (e) => onTab(e, 'script') }>
-                Script
-              </button>
-              <button class={ `btn mr-2 btn-${state.tab === 'history' ? 'dark' : 'light'}` } onclick={ (e) => onTab(e, 'history') }>
-                { state.tab === 'history' ? 'My History' : 'Lead History' }
-              </button>
-
-              <div class="ml-auto">
-                <button if={ getEmail() } class={ `btn mr-2 btn-${state.tab === 'email' ? 'dark' : 'light'}${getValue('email') ? '' : ' disabled'}` } onclick={ (e) => onTab(e, 'email') }>
-                  <i class="fat fa-envelope mr-2" />
-                  Email
-                </button>
-                <button class={ `btn mr-2 btn-${state.tab === 'note' ? 'dark' : 'light'}` } onclick={ (e) => onTab(e, 'note') }>
-                  <i class="fat fa-file mr-2" />
-                  Note
-                </button>
-                <button class={ `btn mr-2 btn-${state.tab === 'sms' ? 'dark' : 'light'}` } onclick={ (e) => onTab(e, 'sms') }>
-                  <i class="fat fa-comments mr-2" />
-                  SMS
-                </button>
-                <button class={ `btn btn-${props.call ? 'dark' : 'light'}` } onclick={ (e) => onCall(e) }>
-                  <i class="fat fa-phone mr-2" />
-                  Call
-                </button>
-              </div>
-            </div>
-
-            <div if={ state.tab === 'email' } class="mb-3 card">
-              <div class="card-body">
-                <label class="form-label">
-                  Email
-                </label>
-                <input class="form-control mb-3" placeholder="Subject" ref="subject" />
-                <editor name="email" show-toolbar={ true } ref={ ref('email') } placeholder="Content" />
-              </div>
-              <div class="card-footer text-right pt-0">
-                <button class={ `btn btn-success${loading('email') ? ' disabled' : ''}${getValue('email') ? '' : ' disabled'}` } onclick={ (e) => onEmail(e) }>
-                  { loading('email') ? 'Sending...' : 'Send' }
-                </button>
-              </div>
-            </div>
-
-            <div if={ state.tab === 'sms' } class="mb-3 card">
-              <div class="card-body">
-                <label class="form-label">
-                  SMS Message
-                </label>
-                <input class="form-control" type="text" id="sms" />
-              </div>
-              <div class="card-footer text-right pt-0">
-                <button class={ `btn btn-success${loading('sms') ? ' disabled' : ''}` } onclick={ (e) => onSMS(e) }>
-                  { loading('sms') ? 'Sending...' : 'Send' }
-                </button>
-              </div>
-            </div>
-
-            <div if={ state.tab === 'note' } class="mb-3 card">
-              <div class="card-body">
-                <label class="form-label">
-                  Note
-                </label>
-                <textarea class="form-control" type="text" id="note" />
-              </div>
-              <div class="card-footer text-right pt-0">
-                <button class={ `btn btn-success${loading('note') ? ' disabled' : ''}` } onclick={ (e) => onNote(e) }>
-                  { loading('note') ? 'Submitting...' : 'Submit' }
-                </button>
-              </div>
-            </div>
-
-            <div if={ state.tab !== 'script' && state.tab !== 'history' }>
-              <page-phone-event each={ (event, i) in state.events } event={ event } phone={ phone } { ...getProps() } />
-            </div>
-
-            <div if={ state.tab === 'history' }>
-              <page-phone-event each={ (event, i) in state.history } event={ event } phone={ phone } { ...getProps() } />
-            </div>
-
-            <div if={ state.tab === 'script' }>
-              <button each={ (script, i) in getScripts() } class={ `btn btn-${state.script && state.script.id === script.id ? 'dark' : 'light'} mr-2 mb-2` } onclick={ (e) => onScript(e, script) }>
-                { script.name || 'N/A' }
-              </button>
-              <div class="card mt-3" if={ state.script }>
-                <div class="card-body">
-                  <hbs class="ql-editor p-0 m-0" template={ state.script.text || '' } data={ connection && connection.item ? connection.item.get() : {} } />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <!-- / CHAT MAIN -->
-    </div>
+    <!-- DASHBOARD -->
+    <dashup-view if={ props.page.get('data.model') } preview={ !props.altering } view="dashboard" type="page" struct="dashboard" blocks={ getBlocks() } on-select={ (item) => onSelect(item) } is-selected={ (item) => isSelected(item) } phone={ phone } connection={ connection } { ...getProps() } />
+    <!-- / DASHBOARD -->
 
     <!-- MODAL -->
     <div if={ state.modal } class="modal fade" data-backdrop="static">
@@ -231,21 +28,17 @@
           <!-- Modal Header -->
           <div class="modal-header">
             <h5 class="modal-title">
-              Called <b>{ getValue('name', null, state.modal) }</b>
+              Called <b>{ getValue(state.modal, 'name', null) }</b>
             </h5>
             <button type="button" class="btn-close" data-dismiss="modal">&times;</button>
           </div>
 
           <!-- Modal body -->
           <div class="modal-body">
-            <div class="mb-3" if={ props.page.get('data.modal.0') }>
-              <dashup-view ref={ ref('modal-item') } view="form" type="page" struct="form" item={ connection.item } preview={ !props.altering } fields={ props.context.fields } get-field={ getFieldType } children={ getModalChildren() } { ...getProps() } />
+            <div if={ getForm() } class="mb-3" if={ props.page.get('data.modal.0') }>
+              <dashup-view ref={ ref('modal-item') } view="form" type="page" struct="form" item={ state.modal } preview={ true } page={ getForm() } { ...getProps(true) } />
             </div>
-            <hr if={ props.page.get('data.event.modal.0') && props.page.get('data.modal.0') } />
-            <div class="mb-3" if={ props.page.get('data.event.modal.0') && connection.event }>
-              <dashup-view ref={ ref('modal-event') } view="form" type="page" struct="form" item={ connection.event } preview={ !props.altering } fields={ getFields() } get-field={ getFieldType } children={ getModalChildren(true) } { ...getProps() } />
-            </div>
-            <hr />
+            <hr if={ getForm() } />
             <div class="mb-3">
               <label class="form-label">
                 Note
@@ -259,7 +52,7 @@
             <button type="button" class="btn btn-info mr-auto" data-dismiss="modal">
               Close
             </button>
-            <button type="button" class={ `btn btn-success${loading('modal') ? ' disabled' : ''}` } onclick={ (e) => onSubmitModal(e) }>
+            <button type="button" class={ `btn btn-success${loading('modal') ? ' disabled' : ''}` } onclick={ (e) => onSubmit(e) }>
               { loading('modal') ? 'Submitting...' : 'Next' }
             </button>
           </div>
@@ -268,6 +61,7 @@
       </div>
     </div>
     <!-- / MODAL -->
+
   </div>
 
   <script>
@@ -275,12 +69,10 @@
     import moment from 'moment';
     import dotProp from 'dot-prop';
     import PerfectScrollbar from 'perfect-scrollbar';
-    import { Device } from 'twilio-client';
+    import { v4 as uuid } from 'uuid';
 
     // chat page task
     import Phone from '../../js/phone.ts';
-    import pagePhoneTask from './task.riot';
-    import pagePhoneEvent from './event.riot';
 
     // export default
     export default class PagePhoneView {
@@ -298,8 +90,7 @@
       static get components() {
         // return components
         return {
-          pagePhoneTask,
-          pagePhoneEvent,
+          
         };
       }
 
@@ -313,90 +104,80 @@
         // mixins
         Phone(this);
 
+        // bind methods
+        this.onSelect = this.onSelect.bind(this);
+        this.loadModal = this.loadModal.bind(this);
+
         // safe update
         this.safeUpdate = () => {
           this.update();
         };
 
-        // set state
-        this.state.stats = {
-          calls : {
-            avg   : 0,
-            total : 0,
+        // default blocks
+        const defaultBlocks = [
+          {
+            uuid  : uuid(),
+            type  : 'card',
+            _grid : {
+              x : 6,
+              y : 0,
+              w : 3,
+              h : 2,
+            },
           },
-          duration : {
-            avg   : 0,
-            total : 0,
+          {
+            uuid  : uuid(),
+            type  : 'form',
+            _grid : {
+              x : 2,
+              y : 0,
+              w : 4,
+              h : 6,
+            },
           },
-        };
-        this.state.limit = 25;
+          {
+            uuid  : uuid(),
+            type  : 'events',
+            _grid : {
+              x : 6,
+              y : 2,
+              w : 6,
+              h : 4,
+            },
+            background : true,
+          },
+          {
+            uuid  : uuid(),
+            type  : 'contact',
+            _grid : {
+              x : 9,
+              y : 0,
+              w : 3,
+              h : 2,
+            },
+          },
+          {
+            uuid  : uuid(),
+            type  : 'list',
+            _grid : {
+              x : 0,
+              y : 0,
+              w : 2,
+              h : 6,
+            },
+            background : true,
+          },
+        ];
 
-        // bind
-        this.init         = this.init.bind(this);
-        this.onNext       = this.onNext.bind(this);
-        this.onPrev       = this.onPrev.bind(this);
-        this.hasNext      = this.hasNext.bind(this);
-        this.onItems      = this.onItems.bind(this);
-        this.onClick      = this.onClick.bind(this);
-        this.onScript     = this.onScript.bind(this);
-        this.loadItem     = this.loadItem.bind(this);
-        this.loadStats    = this.loadStats.bind(this);
-        this.loadModal    = this.loadModal.bind(this);
-        this.getFieldType = this.getFieldType.bind(this);
-
-        // listeners
-        this.props.page.on('reload', this.safeUpdate);
-        this.props.page.on('data.view', this.safeUpdate);
-        this.props.page.on('data.model', this.safeUpdate);
-        this.props.page.on('data.forms', this.safeUpdate);
-        this.props.page.on('data.display', this.safeUpdate);
+        // check page
+        if (!this.props.page.get('data.blocks')) {
+          // set
+          this.props.page.set('data.blocks', defaultBlocks);
+        }
 
         // on item
-        this.phone.on('item', this.loadItem);
+        this.phone.on('item', this.safeUpdate);
         this.phone.on('modal', this.loadModal);
-      }
-
-      /**
-       * on mounted
-       *
-       * @param {Array} args
-       */
-      onMounted(...args) {
-        // check window
-        if (typeof window === 'undefined') return;
-        
-        // init
-        this.init();
-      }
-
-      /**
-       * on mounted
-       *
-       * @param {Array} args
-       */
-      onUpdated(...args) {
-        // check window
-        if (typeof window === 'undefined') return;
-
-        // set ps
-        if (!this.$('.task-container.ps') && this.$('.task-container')) {
-          // add bar
-          this.ps = new PerfectScrollbar(this.$('.task-container'), {
-            suppressScrollX : true,
-          });
-        }
-
-        // current
-        if (!this.shownFirst && this.props.current) {
-          // shown first
-          this.shownFirst = true;
-
-          // do item
-          this.phone.item(this.props, this.props.current);
-        }
-
-        // tooltip
-        $('.tooltip').remove();
       }
 
       /**
@@ -406,568 +187,112 @@
         // check frontend
         if (typeof window === 'undefined') return;
 
-        // listeners
-        this.props.page.removeListener('reload', this.safeUpdate);
-        this.props.page.removeListener('data.view', this.safeUpdate);
-        this.props.page.removeListener('data.model', this.safeUpdate);
-        this.props.page.removeListener('data.forms', this.safeUpdate);
-        this.props.page.removeListener('data.display', this.safeUpdate);
-
         // on item
-        this.phone.removeListener('item', this.loadItem);
+        this.phone.removeListener('item', this.safeUpdate);
         this.phone.removeListener('modal', this.loadModal);
-
-        // client
-        if (this.__stats) {
-          clearInterval(this.__stats);
-        }
-
-        // disconnect
-        if (this.connection && this.connection.conn) {
-          this.connection.conn.disconnect();
-        }
-
-        // items
-        if (this.props.items && this.props.items.removeListener) {
-          // safe update
-          this.props.items.removeListener('update', this.safeUpdate);
-          this.props.items.deafen();
-        }
-        if (this.state.events && this.state.events.removeListener) {
-          // safe update
-          this.state.events.removeListener('update', this.safeUpdate);
-          this.state.events.deafen();
-        }
-        if (this.state.history && this.state.history.removeListener) {
-          // safe update
-          this.state.history.removeListener('update', this.safeUpdate);
-          this.state.history.deafen();
-        }
       }
 
+      /**
+       * gets blocks
+       */
+      getBlocks() {
+        // return blocks
+        return this.props.blocks.filter((b) => (b.categories || []).includes('phone'));
+      }
 
-      // ////////////////////////////////////////////////////////////////////////////
-      //
-      // GET METHODS
-      //
-      // ////////////////////////////////////////////////////////////////////////////
+      /**
+       * get end call form
+       */
+      getForm() {
+        // get form
+        const form = this.props.page.get('data.modal');
+
+        // form
+        if (!form) return null;
+
+        // find form
+        return this.props.dashup.page(form);
+      }
 
       /**
        * get props
        */
-      getProps(noPage) {
+      getProps(withoutPage) {
         // clone
         const newProps = { ...(this.props) };
 
         // delete
-        delete newProps.ref;
         delete newProps.type;
         delete newProps.item;
         delete newProps.view;
         delete newProps.class;
-        delete newProps.event;
+        delete newProps.blocks;
         delete newProps.struct;
-
-        // check page
-        if (!noPage) {
-          delete newProps.fields;
-          delete newProps.children;
-        }
+        delete newProps.context;
 
         // delete page
-        if (noPage) {
-          delete newProps.page;
-        }
+        if (withoutPage) delete newProps.page;
+
+        // set item
+        newProps.item = this.connection && this.connection.item ? this.connection.item : null;
+
+        // set context
+        const context = { ...(this.props.context || {}) };
+
+        // add to context
+        context.item = newProps.item ? newProps.item.toJSON() : null;
+
+        // model/forms
+        newProps.phone = this.phone;
+        newProps.model = this.props.page.get('data.model');
+        newProps.forms = this.props.page.get('data.forms') || [];
+        newProps.context = context;
+        newProps.connection = this.connection;
 
         // return
         return newProps;
       }
 
       /**
-       * get form
-       */
-      getForm() {
-        // check
-        if (!this.props.page.get('data.forms')) return;
-
-        // get form
-        return this.props.dashup.page(this.state.form || this.props.page.get('data.forms')[0]);
-      }
-
-      /**
-       * get field
-       */
-      getFieldType({ type }) {
-        // return field
-        return this.props.fields.find((f) => f.type === type);
-      }
-
-      /**
-       * get total
-       */
-      getTotal() {
-        // return count
-        return dotProp.get(this, 'refs.grid.refs.body.state.count') || 0;
-      }
-
-      /**
-       * get value
-       */
-      getValue(name, tld, item) {
-        // item
-        if (!item) item = this.connection.item;
-
-        // return field
-        const field = this.props.context.fields.find((f) => f.uuid === this.props.page.get(`data.field.${name}`));
-
-        // return value
-        return dotProp.get(item.toJSON(), `${field.name || field.uuid}${tld ? `.${tld}` : ''}`);
-      }
-
-      /**
-       * get field
-       */
-      getTags(event) {
-        // get tag fields
-        const tagFields = [];
-
-        // loop fields
-        if (!event) [...(this.props.context.fields)].filter((f) => (this.props.page.get('data.status') || []).includes(f.uuid)).forEach((field) => {
-          // push
-          tagFields.push({
-            ...field,
-
-            form : 'contact',
-          });
-        });
-        if (event) [...(this.getFields())].filter((f) => (this.props.page.get('data.event.status') || []).includes(f.uuid)).forEach((field) => {
-          // push
-          tagFields.push({
-            ...field,
-
-            form : 'event',
-          });
-        });
-
-        // tag field
-        if (!tagFields) return [];
-
-        // get options
-        return tagFields.reduce((accum, field) => {
-          // push
-          accum.push(...(field.options || []).map((option) => {
-            // return value
-            return {
-              ...option,
-
-              form  : field.form,
-              field : field.name || field.uuid,
-            };
-          }));
-
-          // return accum
-          return accum;
-        }, []);
-      }
-
-      /**
-       * get difference
-       */
-      getPercent(a, b) {
-        // value
-        const total = (a / b) * 100;
-
-        // total
-        if (total > 100) return '100.00';
-
-        // return total
-        return total.toFixed(2);
-      }
-
-      /**
-       * get fields
-       */
-      getFields() {
-        // reduce
-        return [this.props.page.get('data.event.form')].filter((i) => i).reduce((accum, id) => {
-          // get page
-          const page = this.props.dashup.page(id);
-
-          // check page
-          if (!page || !page.get('data.fields')) return accum;
-
-          // loop fields
-          accum.push(...page.get('data.fields').map((f) => {
-            // return field
-            return {
-              ...f,
-
-              form : page.get('_id'),
-            };
-          }));
-
-          // return accum
-          return accum;
-        }, []);
-      }
-
-      /**
-       * get modal children
-       */
-      getModalChildren(event) {
-        // check event
-        if (event) {
-          // get modal children
-          return [...(this.getFields())].filter((f) => (this.props.page.get('data.event.modal') || []).includes(f.uuid));
-        }
-
-        // return fields
-        return [...(this.props.context.fields)].filter((f) => (this.props.page.get('data.modal') || []).includes(f.uuid));
-      }
-      
-      /**
-       * get scripts
-       */
-      getScripts() {
-        // return
-        return Array.isArray(this.props.page.get('data.scripts')) ? this.props.page.get('data.scripts') : [];
-      }
-
-
-      // ////////////////////////////////////////////////////////////////////////////
-      //
-      // EVENT METHODS
-      //
-      // ////////////////////////////////////////////////////////////////////////////
-
-      /**
-       * on tab
-       */
-      onTab(e, tab) {
-        // prevent default
-        if (e) {
-          e.preventDefault();
-          e.stopPropagation();
-        }
-
-        // update tab
-        this.update({
-          tab : this.state.tab === tab ? null : tab,
-        });
-      }
-
-      /**
-       * on items
-       */
-      onItems(items, count, { page, limit }) {
-        // update
-        this.phone.items(this.props, items, count, { page, limit });
-        this.update({
-          page,
-          count,
-          limit,
-
-          next : this.onNext,
-          prev : this.onPrev,
-          more : this.hasNext,
-        });
-      }
-
-      /**
-       * on more
-       */
-      hasNext(e) {
-        // body
-        const gridBody = ((this.refs.grid || {}).refs || {}).body;
-
-        // has prev
-        return gridBody && gridBody.hasNext();
-      }
-
-      /**
-       * has email
-       */
-      getEmail() {
-        // return email
-        return (this.props.page.get('connects') || []).find((c) => c.email);
-      }
-
-      /**
-       * on more
-       */
-      async onNext(e) {
-        // check loading
-        if (this.loading('items')) return;
-
-        // body
-        const gridBody = ((this.refs.grid || {}).refs || {}).body;
-
-        // check body
-        if (!gridBody || !gridBody.hasNext()) return;
-
-        // on next
-        this.loading('items', true);
-        await gridBody.onNext(e);
-        this.loading('items', false);
-      }
-
-      /**
-       * on more
-       */
-      hasPrev(e) {
-        // body
-        const gridBody = ((this.refs.grid || {}).refs || {}).body;
-
-        // has prev
-        return gridBody && gridBody.hasPrev();
-      }
-
-      /**
-       * on more
-       */
-      async onPrev(e) {
-        // check loading
-        if (this.loading('items')) return;
-
-        // body
-        const gridBody = ((this.refs.grid || {}).refs || {}).body;
-
-        // check body
-        if (!gridBody || !gridBody.hasPrev()) return;
-
-        // on next
-        this.loading('items', true);
-        await gridBody.onPrev(e);
-        this.loading('items', false);
-      }
-
-      /**
-       * create call
-       */
-      onCall(e) {
-        // prevent default
-        if (e) {
-          e.preventDefault();
-          e.stopPropagation();
-        }
-
-        // create call
-        this.phone.start(this.props, this.connection.item);
-      }
-
-      /**
-       * on send
-       */
-      async onEmail(e) {
-        // prevent default
-        if (e) {
-          e.preventDefault();
-          e.stopPropagation();
-        }
-
-        // check email
-        if (!this.connection.item || !this.getValue('email')) return;
-
-        // check sms
-        const body = this.refs.email.val();
-        const subject = this.$('[ref="subject"]').value;
-        const connect = this.getEmail();
-
-        // loading
-        this.loading('email', true);
-
-        // submit form
-        const item = await this.props.dashup.action({
-          type   : 'connect',
-          user   : this.props.me.get('_id'),
-          page   : this.props.page.get('_id'),
-          form   : this.props.page.get('data.event.form'),
-          model  : this.props.page.get('data.event.model'),
-          struct : connect.type,
-        }, 'send', connect, {
-          body,
-          subject, 
-          to : this.getValue('email'),
-          item : this.connection.item.get('_id'),
-          user : this.props.dashup.get('_meta.member'),
-        });
-
-        // loading
-        this.loading('email', false);
-      }
-
-      /**
-       * on send
-       */
-      async onSMS(e) {
-        // prevent default
-        if (e) {
-          e.preventDefault();
-          e.stopPropagation();
-        }
-
-        // check sms
-        const body = this.$('#sms').value;
-        this.$('#sms').value = '';
-
-        // loading
-        this.loading('sms', true);
-
-        // create call
-        await this.phone.sms(this.props, this.connection.item, body);
-
-        // loading
-        this.loading('sms', false);
-      }
-
-      /**
-       * on send
-       */
-      async onNote(e, next) {
-        // prevent default
-        if (e) {
-          e.preventDefault();
-          e.stopPropagation();
-        }
-
-        // check sms
-        const body = this.$('#note').value;
-        this.$('#note').value = '';
-
-        // loading
-        this.loading('note', true);
-
-        // add event
-        await this.phone.event(this.props, {
-          body,
-          item  : this.connection.item,
-          type  : 'note',
-          time  : new Date(),
-          title : 'Added Note',
-        });
-
-        // loading
-        this.loading('note', false);
-
-        // next phone
-        if (next) {
-          // close modal
-          $('.modal:visible').modal('hide');
-
-          // next
-          this.phone.next(this.props);
-        }
-      }
-      
-      /**
-       * on script
-       */
-      onScript(e, script) {
-        // prevent default
-        e.preventDefault();
-        e.stopPropagation();
-
-        // update
-        if (this.state.script) {
-          // remove
-          this.update({
-            script : null,
-          });
-        }
-
-        // update
-        this.update({
-          script,
-        });
-      }
-
-      /**
        * on click
        */
-      onClick(e, item) {
-        // prevent default
-        if (e) {
-          e.preventDefault();
-          e.stopPropagation();
-        }
+      onSelect(item) {
+        // on item
+        if (this.isSelected(item)) return this.props.onItem(null, item);
 
         // do item
         this.phone.item(this.props, item);
       }
 
       /**
-       * on data
+       * load modal
        */
-      onData(field, value) {
-        // set value
-        this.connection.item.set(field.name || field.uuid, value);
+      async loadModal() {
+        // check item
+        if (!this.connection.item) return;
 
-        // update
-        this.update();
-      }
-
-      /**
-       * on form
-       */
-      onForm(e, form) {
-        // prevent
-        e.preventDefault();
-        e.stopPropagation();
-
-        // loading
-        this.loading('form', true);
-
-        // update
+        // log
         this.update({
-          form,
+          modal : null,
+        });
+        this.update({
+          modal : this.connection.item,
         });
 
-        // loading
-        setTimeout(() => {
-          this.loading('form', false);
-        }, 10);
-      }
-
-      /**
-       * on submit
-       *
-       * @param {Event} e
-       */
-      async onSubmit(e, data) {
-        // prevent
-        e.preventDefault();
-        e.stopPropagation();
-
-        // loading
-        this.loading('submit', true);
-
-        // submit form
-        if (!data) data = this.refs.form.data();
-
-        // submit form
-        const item = await this.props.dashup.action({
-          type   : 'page',
-          page   : this.props.page.get('data.forms')[0],
-          form   : this.props.page.get('data.forms')[0],
-          model  : this.props.page.get('data.model'),
-          struct : 'form',
-        }, 'form.submit', data);
-        
-        // loading
-        this.loading('submit', false);
+        // show modal
+        $(this.$('.modal')).modal('show');
       }
 
       /**
        * on tag next
        */
-      async onSubmitModal(e) {
+      async onSubmit(e) {
         // get event
         const item = this.connection.item;
         const event = this.connection.event;
 
         // get data from each form
         const itemData = this.refs['modal-item'] && this.refs['modal-item'].data();
-        const eventData = this.refs['modal-event'] && this.refs['modal-event'].data();
 
         // loading modal
         this.loading('modal', true);
@@ -981,23 +306,9 @@
           struct : 'form',
         }, 'form.submit', {
           ...itemData,
-
           _id : item.get('_id'),
         });
-
-        // check event
-        if (event && eventData) await this.props.dashup.action({
-          type   : 'page',
-          page   : this.props.page.get('data.event.form'),
-          form   : this.props.page.get('data.event.form'),
-          model  : this.props.page.get('data.event.model'),
-          struct : 'form',
-        }, 'form.submit', {
-          ...eventData,
-
-          _id : event.get('_id'),
-        });
-
+        
         // check modal notes
         const body = $(this.$('[ref="modal-note"]')).val();
 
@@ -1023,124 +334,26 @@
         this.loading('next', false);
       }
 
-
-      // ////////////////////////////////////////////////////////////////////////////
-      //
-      // Init Methods
-      //
-      // ////////////////////////////////////////////////////////////////////////////
-  
       /**
-       * init
+       * is selected
        */
-      async init() {
-        // items
-        if (!this.state.history && this.props.page.get('data.event.form')) {
-          // get user fields
-          const userFields = [...(this.phone.fields(this.props))].filter((f) => (this.props.page.get('data.event.user') || []).includes(f.uuid));
-
-          // check user fields
-          if (userFields.length) {
-            // set query
-            let history = this.props.dashup.page(this.props.page.get('data.event.form'));
-
-            // loop fields
-            history = history[userFields.length > 1 ? 'or' : 'where'](...(userFields.map((userField) => {
-              // return or
-              return {
-                [userField.name || userField.uuid] : this.props.dashup.get('_meta.member'),
-              };
-            })));
-
-            // listen
-            history = await history.sort('created_at', -1).limit(25).listen();
-
-            // on update
-            history.on('update', this.safeUpdate);
-
-            // update
-            this.update({
-              history,
-            });
-          }
-        }
-
-        // get initial stats
-        if (!this.__stats) {
-          // stats
-          this.loadStats();
-
-          // load stats
-          this.__stats = setInterval(this.loadStats, 5 * 1000);
-        }
+      isSelected(item) {
+        // return selected
+        return this.connection && this.connection.item && this.connection.item.get('_id') === item.get('_id');
       }
 
       /**
-       * get stats
+       * get value
        */
-      async loadStats() {
-        // load stats
-        this.update(await this.phone.stats(this.props));
-      }
+      getValue(item, name, tld) {
+        // item
+        if (!item) item = this.connection.item;
 
-      /**
-       * load item
-       */
-      async loadItem(item) {
-        // itemField
-        const fields = this.phone.fields(this.props);
-        const itemField = this.phone.field(this.props, 'item', fields);
-  
-        // loading chat
-        this.loading('item', true);
+        // return field
+        const field = this.phone.getFields(this.props).find((f) => f.uuid === this.props.page.get(`data.field.${name}`));
 
-        // items
-        if (this.state.events && this.state.events.removeListener) {
-          // safe update
-          this.state.events.removeListener('update', this.safeUpdate);
-          this.state.events.deafen();
-        }
-
-        // get model
-        let events = [];
-        const model = this.props.page.get('data.event.model');
-
-        // get model
-        if (model && itemField) {
-          // load events
-          const modelPage = this.props.dashup.page(model);
-
-          // load events
-          events = await modelPage.where({
-            [itemField.name || itemField.uuid] : item.get('_id'),
-          }).sort('created_at', -1).limit(25).listen();
-
-          // on update
-          events.on('update', this.safeUpdate);
-        }
-
-        // update state
-        this.update({
-          events,
-        });
-        this.loading('item', false);
-      }
-
-      /**
-       * load modal
-       */
-      async loadModal() {
-        // check item
-        if (!this.connection.item) return;
-
-        // log
-        this.update({
-          modal : null,
-        });
-        this.update({
-          modal : this.connection.item,
-        });
-        $(this.$('.modal')).modal('show');
+        // return value
+        return dotProp.get(item.toJSON(), `${field.name || field.uuid}${tld ? `.${tld}` : ''}`);
       }
 
 

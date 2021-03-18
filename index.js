@@ -5,11 +5,13 @@ const { Module } = require('@dashup/module');
 // import base
 const SMSAction = require('./actions/sms');
 const PhonePage = require('./pages/phone');
+const EventsBlock = require('./blocks/events');
+const ContactBlock = require('./blocks/contact');
 
 /**
  * export module
  */
-class PhoneModule extends Module {
+class CRMModule extends Module {
 
   /**
    * construct discord module
@@ -25,9 +27,15 @@ class PhoneModule extends Module {
    * @param {*} fn 
    */
   register(fn) {
-    // register sms action
+    // register pages
     fn('page', PhonePage);
+
+    // register actions
     fn('action', SMSAction);
+
+    // register blocks
+    fn('block', EventsBlock);
+    fn('block', ContactBlock);
   }
 
   /**
@@ -52,4 +60,4 @@ class PhoneModule extends Module {
 }
 
 // create new
-module.exports = new PhoneModule();
+module.exports = new CRMModule();

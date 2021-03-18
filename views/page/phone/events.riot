@@ -20,17 +20,8 @@
           { field.label } Field
         </label>
         <eden-select on-change={ (e, value) => onField(field.name, value) } ref={ ref(field.name) } placeholder={ `Select ${field.label}` } data={ getField(field.name, field.type) } />
-      </div>
-
-      <hr />
-        
-      <div class="mb-3">
-        <label class="form-label">
-          Modal Field(s)
-        </label>
-        <eden-select on-change={ (e, val) => onModal(val) } ref={ ref('modal') } placeholder="Select Modal Field" data={ getModal() } multiple={ true } />
-        <small>
-          Fields to display for the end of call modal
+        <small if={ field.help }>
+          { field.help }
         </small>
       </div>
     </div>
@@ -38,7 +29,7 @@
 
   <script>
     // export default
-    export default class PagePhoneConfig {
+    export default class PagePhoneEvents {
 
 
       // ////////////////////////////////////////////////////////////////////////////
@@ -62,46 +53,49 @@
           {
             name  : 'item',
             type  : 'model',
+            help  : 'Model field referencing the contact',
             label : 'Task',
           },
           {
             name  : 'to',
             type  : 'phone',
-            label : 'To',
+            help  : 'Phone field for the to number',
+            label : 'Phone To',
           },
           {
             name  : 'from',
             type  : 'phone',
-            label : 'From',
+            help  : 'Phone field for the from number',
+            label : 'Phone From',
           },
           {
             name  : 'title',
             type  : 'text',
+            help  : 'Text field for the event title',
             label : 'Title'
           },
           {
             name  : 'type',
             type  : 'text',
+            help  : 'Text field for the event type',
             label : 'Type'
           },
           {
             name  : 'body',
             type  : 'textarea',
+            help  : 'Textarea field for the event content/body',
             label : 'Body',
-          },
-          {
-            name  : 'date',
-            type  : 'date',
-            label : 'Date',
           },
           {
             name  : 'user',
             type  : 'user',
+            help  : 'User field for the calling user',
             label : 'User',
           },
           {
             name  : 'recording',
             type  : 'file',
+            help  : 'File field for the call recording',
             label : 'Recording',
           }
         ];
@@ -121,9 +115,6 @@
         // get value
         if (!val) val = this.refs.model.val();
 
-        // model
-        if (!val || !val.length) return;
-
         // loading model
         this.loading('model', true);
         
@@ -140,9 +131,6 @@
       async onForm(val) {
         // get value
         if (!val) val = this.refs.form.val();
-
-        // model
-        if (!val || !val.length) return;
 
         // loading model
         this.loading('form', true);
@@ -161,9 +149,6 @@
         // get value
         if (!val) val = this.refs[type].val();
 
-        // model
-        if (!val || !val.length) return;
-
         // field
         const data = this.props.page.get('data.event') || {};
 
@@ -172,20 +157,6 @@
         
         // set model
         this.props.data('event', data);
-      }
-
-      /**
-       * on model
-       */
-      onModal(val) {
-        // get value
-        if (!val) val = this.refs.modal.val();
-
-        // model
-        if (!val || !val.length) return;
-        
-        // set model
-        this.props.data('event.modal', val);
       }
 
 
@@ -245,21 +216,6 @@
             name     : field.label || field.name,
             value    : field.uuid,
             selected : this.props.page.get(`data.event.${name}`) === field.uuid,
-          };
-        });
-      }
-
-      /**
-       * get field
-       */
-      getModal(name, type) {
-        // return value
-        return [...(this.getFields())].map((field) => {
-          // return fields
-          return {
-            name     : field.label || field.name,
-            value    : field.uuid,
-            selected : (this.props.page.get('data.event.modal') || []).includes(field.uuid),
           };
         });
       }

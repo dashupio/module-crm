@@ -12,6 +12,15 @@
       </label>
       <eden-select on-change={ (e, val) => onForms(val) } ref={ ref('forms') } placeholder="Select Form(s)" multiple={ true } data={ getForms() } />
     </div>
+    <div if={ !loading('model') && !loading('form') && props.page.get('data.forms.0') } class="mb-3">
+      <label class="form-label">
+        End Call Form
+      </label>
+      <eden-select on-change={ (e, val) => onModal(val) } ref={ ref('modal') } placeholder="Select Modal Field" data={ getModal() } />
+      <small>
+        Form to display at the end of a call.
+      </small>
+    </div>
 
     <div if={ !loading('model') && !loading('form') && props.page.get('data.forms.0') }>
       <hr />
@@ -42,58 +51,6 @@
           Selecting a user field will allow you to assign tasks to that user.
         </small>
       </div>
-
-      <hr />
-        
-      <div class="mb-3">
-        <label class="form-label">
-          Modal Field(s)
-        </label>
-        <eden-select on-change={ (e, val) => onModal(val) } ref={ ref('modal') } placeholder="Select Modal Field" data={ getModal() } multiple={ true } />
-        <small>
-          Fields to display for the end of call modal
-        </small>
-      </div>
-
-      <hr />
-
-      <ul class="nav nav-tabs mb-3">
-        <li class="nav-item">
-          <a class={ `nav-link${state.tab === 'display' ? ' active' : ''}` } href="#!" onclick={ (e) => onTab(e, 'display') }>
-            Display (sidebar)
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class={ `nav-link${state.tab === 'view' ? ' active' : ''}` } href="#!" onclick={ (e) => onTab(e, 'view') }>
-            Display (large)
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class={ `nav-link${state.tab === 'script' ? ' active' : ''}` } href="#!" onclick={ (e) => onTab(e, 'script') }>
-            Script
-          </a>
-        </li>
-      </ul>
-
-      <div class={ `mb-3${state.tab !== 'display' ? ' d-none' : ''}` }>
-        <label class="form-label">
-          Item Display (sidebar)
-        </label>
-        <code-block ref={ ref('display') } mode="handlebars" content={ props.page.get('data.display') || '' } prevent-update={ true } on-change={ (e) => onDisplay(e) } />
-        <div class="alert alert-primary mt-2">
-          <hbs template={ props.page.get('data.display') || '' } data={ state.test ? state.test.get() : {} } />
-        </div>
-      </div>
-
-      <div class={ `mb-3${state.tab !== 'view' ? ' d-none' : ''}` }>
-        <label class="form-label">
-          Item Display (large)
-        </label>
-        <code-block ref={ ref('view') } mode="handlebars" content={ props.page.get('data.view') || '' } prevent-update={ true } on-change={ (e) => onView(e) } />
-        <div class="alert alert-primary mt-2">
-          <hbs template={ props.page.get('data.view') || '' } data={ state.test ? state.test.get() : {} } />
-        </div>
-      </div>
     </div>
 
     <div if={ props.page.get('data.forms.0') }>
@@ -112,7 +69,7 @@
 
   <script>
     // export default
-    export default class PagePhoneConfig {
+    export default class PagePhoneContacts {
 
 
       // ////////////////////////////////////////////////////////////////////////////
@@ -144,16 +101,8 @@
             name  : 'phone',
             type  : 'phone',
             label : 'Phone',
-          },
-          {
-            name  : 'duration',
-            type  : 'number',
-            label : 'Duration',
           }
         ];
-
-        // set tab
-        this.state.tab = 'display';
       }
 
 
@@ -266,22 +215,8 @@
        * on model
        */
       onModal(val) {
-        // get value
-        if (!val) val = this.refs.status.val();
-
-        // model
-        if (!val || !val.length) return;
-        
         // set model
         this.props.data('modal', val);
-      }
-
-      /**
-       * on display
-       */
-      onDisplay(value) {
-        // set color
-        this.props.data('display', value, true);
       }
 
       /**
@@ -366,12 +301,15 @@
        */
       getModal() {
         // return value
-        return [...(this.props.context.fields)].map((field) => {
+        return Array.from(this.props.dashup.get('pages').values()).filter((page) => {
+          // return model pages
+          return page.get('type') === 'form' && page.get('data.model') === this.props.page.get('data.model');
+        }).map((page) => {
           // return fields
           return {
-            name     : field.label || field.name,
-            value    : field.uuid,
-            selected : (this.props.page.get('data.modal') || []).includes(field.uuid),
+            name     : page.get('name'),
+            value    : page.get('_id'),
+            selected : this.props.page.get('data.modal') === page.get('_id'),
           };
         });
       }

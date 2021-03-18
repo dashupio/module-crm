@@ -62,7 +62,7 @@ export default class PhonePage extends Struct {
 
     // return page data
     return {
-      tabs : ['Contacts', 'Events', 'Numbers', 'Connects', 'Scripts'],
+      tabs : ['Contacts', 'Events', 'Numbers', 'Calls', 'Connects'],
 
       wizard : false ? null : {
         steps : [{
@@ -105,9 +105,9 @@ export default class PhonePage extends Struct {
     return {
       view     : 'page/phone/view',
       menu     : 'page/phone/menu',
-      events   : 'page/phone/events',
+      calls    : 'page/phone/calls',
       filter   : 'page/phone/filter',
-      scripts  : 'page/phone/scripts',
+      events   : 'page/phone/events',
       numbers  : 'page/phone/numbers',
       contacts : 'page/phone/contacts',
       connects : 'page/phone/connects',
@@ -177,8 +177,6 @@ export default class PhonePage extends Struct {
       'order.payments.0.status' : 'active',
     }).find();
 
-    console.log(opts, numbers);
-
     // return data
     return (numbers || []).map((number) => {
       // return data
@@ -230,8 +228,6 @@ export default class PhonePage extends Struct {
   async sendAction(opts, { body, from, to}) {
     // query model
     const number = await new Query({
-      ...opts,
-
       form   : '5fa8f1ba5cc2fcc84ff61ec4',
       page   : '5fa8f1ad5cc2fcc84ff61ec0',
       dashup : '5efdbeafdd5a8af0344187ed',
@@ -269,19 +265,29 @@ export default class PhonePage extends Struct {
    * @param opts 
    * @param data 
    */
-  async purchaseAction(opts, id) {
+  async purchaseAction(opts, id, attempts = 0) {
     // domain
     const domain = this.dashup.config.url.includes('.dev') ? 'dashup.dev' : 'dashup.io';
 
     // query model
     const order = await new Query({
-      ...opts,
-
       form   : '5fa8f1ba5cc2fcc84ff61ec4',
       page   : '5fa8f1ad5cc2fcc84ff61ec0',
       model  : '5fa8f1ad5cc2fcc84ff61ec0',
       dashup : '5efdbeafdd5a8af0344187ed',
     }, 'model').findById(id);
+
+    // await for later
+    if (!order && attempts < 10) {
+      // await try again
+      return await new Promise((resolve, reject) => {
+        // timeout
+        setTimeout(() => {
+          // promise
+          this.purchaseAction(opts, id, attempts + 1).then(resolve).catch(reject);
+        }, 500);
+      });
+    }
 
     // status
     if (order.get('order.payments.0.status') !== 'active') return {
@@ -330,8 +336,6 @@ export default class PhonePage extends Struct {
 
     // save order
     await order.save({
-      ...opts,
-
       form   : '5fa8f1ba5cc2fcc84ff61ec4',
       page   : '5fa8f1ad5cc2fcc84ff61ec0',
       model  : '5fa8f1ad5cc2fcc84ff61ec0',

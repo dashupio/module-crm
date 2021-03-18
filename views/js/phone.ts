@@ -1,6 +1,4 @@
-
 // import event emitter
-import moment from 'moment';
 import { Device } from 'twilio-client';
 import { EventEmitter } from 'events';
 
@@ -17,6 +15,9 @@ class PhoneModule extends EventEmitter {
 
     // connections
     this.connections = new Map();
+
+    // done
+    this.__done = [];
 
     // status interval
     this.__status = setInterval(() => {
@@ -57,9 +58,13 @@ class PhoneModule extends EventEmitter {
     // check connections
     if (this.connections.has(props.page.get('_id'))) return this.connections.get(props.page.get('_id'));
 
+    // done
+    this.__done = [];
+
     // set connection
     this.connections.set(props.page.get('_id'), {
       call   : null,
+      item   : props.current,
       device : new Device(),
       status : 'connecting',
     });
@@ -77,17 +82,14 @@ class PhoneModule extends EventEmitter {
 
     // setup
     conn.device.on('incoming', async (conn) => {
-      // set query
-      let query = props.dashup.page(props.page.get('data.model'));
+      // get fields
+      const fields = this.getFields(props);
 
-      // check items
-      if (props.page.get('data.forms')) {
-        // loop forms
-        query = query.in('_meta.form', props.page.get('data.forms'));
-      }
+      // set query
+      const query = this.getQuery(props);
     
       // get number
-      const numberField = props.context.fields.find((f) => f.uuid === props.page.get('data.field.phone'));
+      const numberField = fields.find((f) => f.uuid === props.page.get('data.field.phone'));
 
       // find or create number
       const item = await query.where({
@@ -126,9 +128,9 @@ class PhoneModule extends EventEmitter {
   /**
    * end call
    */
-  end ({ page }) {
+  end(props) {
     // connection
-    const conn = this.connections.get(page.get('_id'));
+    const conn = this.connections.get(props.page.get('_id'));
 
     // check connection
     if (conn.conn) {
@@ -140,9 +142,18 @@ class PhoneModule extends EventEmitter {
   /**
    * end call
    */
-  async start (props, item) {
+  async start(props, item) {
     // props
-    const { page, context, dashup } = props;
+    const { page, dashup } = props;
+
+    // get fields
+    const fields = this.getFields(props);
+    const eventFields = this.getFields(props, [page.get('data.event.form')]);
+    
+    // get fields
+    const userField = fields.find((f) => f.uuid === page.get('data.user.0'));
+    const dateField = eventFields.find((f) => f.uuid === page.get('data.event.date'));
+    const numberField = fields.find((f) => f.uuid === page.get('data.field.phone'));
 
     // connection
     const conn = this.connections.get(page.get('_id'));
@@ -158,10 +169,6 @@ class PhoneModule extends EventEmitter {
       // error
       return eden.alert.error('Please select an item to make a call');
     }
-    
-    // get number
-    const userField = context.fields.find((f) => f.uuid === page.get('data.user.0'));
-    const numberField = context.fields.find((f) => f.uuid === page.get('data.field.phone'));
     
     // check number
     if (!numberField) {
@@ -209,50 +216,29 @@ class PhoneModule extends EventEmitter {
 
     // on disconnect
     conn.conn.on('disconnect', async () => {
-      // get fields
-      const fields = this.fields(props);
-
-      // get fields
-      const date = this.field(props, 'date', fields);
-      const eventDuration = context.fields.find((f) => f.uuid === page.get('data.field.date'));
-
       // unset call
       conn.call = null;
       conn.conn = null;
 
-      // let save item
-      let saveItem = false;
-
       // duration
-      if (date) {
-        // duration
-        const duration = (new Date().getTime() - new Date(conn.event.get(`${date.name || date.uuid}.start`)).getTime());
+      const duration = (new Date().getTime() - new Date(conn.event.get(`_meta.created_at`)).getTime());
 
-        // set duration
-        conn.event.set(`${date.name || date.uuid}.dur.type`, 'until');
-        conn.event.set(`${date.name || date.uuid}.duration`, duration);
-        await conn.event.save();
+      // set duration
+      conn.event.set(`${dateField.name || dateField.uuid}.dur.type`, 'until');
+      conn.event.set(`${dateField.name || dateField.uuid}.duration`, duration);
+      await conn.event.save();
 
-        // add to event
-        if (eventDuration) {
-          // set duration
-          item.set(eventDuration.name || eventDuration.uuid, (item.get(eventDuration.name || eventDuration.uuid) || 0) + conn.event.get(`${date.name || date.uuid}.duration`));
-          saveItem = true;
-        }
-
-        // check duration
-        if (userField && conn.event.get('duration') > (30 * 1000)) {
-          // auto assign
-          item.set(userField.name || userField.uuid, dashup.get('_meta.member'));
-          saveItem = true;
-        }
-
-        // save item
-        if (saveItem) await item.save();
+      // check duration
+      if (userField && duration > (30 * 1000)) {
+        // auto assign
+        item.set(userField.name || userField.uuid, dashup.get('_meta.member'));
       }
 
+      // save item
+      await item.save();
+
       // check status
-      if (conn.dialer) conn.dialer.status = 'paused';
+      if (conn.dialler) conn.dialler.status = 'paused';
 
       // emit
       this.emit('modal');
@@ -283,8 +269,11 @@ class PhoneModule extends EventEmitter {
     // connection
     const conn = this.connections.get(props.page.get('_id'));
 
+    // get fields    
+    const fields = this.getFields(props);
+
     // get number
-    const numberField = props.context.fields.find((f) => f.uuid === props.page.get('data.field.phone'));
+    const numberField = fields.find((f) => f.uuid === props.page.get('data.field.phone'));
 
     // check number
     if (!numberField) return;
@@ -326,15 +315,8 @@ class PhoneModule extends EventEmitter {
     this.emit('update');
     this.emit('item', conn.item);
 
-    // check state
-    const state = Object.assign({}, {
-      prevent : true,
-    }, eden.router.history.location.state);
-
-    // replace history
-    eden.router.history.replace({
-      pathname : `/app/${props.page.get('_id')}/${item.get('_id')}`,
-    }, state);
+    // on item
+    props.onItem(null, item, false);
   }
 
   /**
@@ -370,19 +352,19 @@ class PhoneModule extends EventEmitter {
   }
 
   /**
-   * create dialer
+   * create dialler
    *
    * @param props 
    * @param id 
    */
-  dialer(props, id) {
+  dialler(props, id) {
     // connection
     const conn = this.connections.get(props.page.get('_id'));
 
     // set number
-    if (!conn.dialer || conn.dialer.id !== id) {
-      // set dialer
-      conn.dialer = {
+    if (!conn.dialler || conn.dialler.id !== id) {
+      // set dialler
+      conn.dialler = {
         id,
         start   : new Date(),
         index   : 0,
@@ -402,14 +384,23 @@ class PhoneModule extends EventEmitter {
     // connection
     const conn = this.connections.get(props.page.get('_id'));
 
-    // check dialer
-    if (!conn.dialer) return;
+    // check item
+    if (conn.item) {
+      // add to used
+      this.__done.push(conn.item.get('_id'));
+    }
+
+    // check dialler
+    if (!conn.dialler) return;
 
     // check connection
     if (conn.conn) return conn.conn.disconnect();
 
+    // get query
+
+
     // set item
-    conn.item = [...(conn.items || [])].filter((item) => !conn.dialer.dialled.includes(item.get('_id')))[0];
+    conn.item = [...(conn.items || [])].filter((item) => !conn.dialler.dialled.includes(item.get('_id')))[0];
 
     // check more
     if (!conn.item && conn.more()) {
@@ -423,12 +414,12 @@ class PhoneModule extends EventEmitter {
     // check item
     if (!conn.item) {
       // set status
-      conn.dialer.status = 'finished';
+      conn.dialler.status = 'finished';
       return this.emit('update');
     }
 
     // add to dialled
-    conn.dialer.dialled.push(conn.item.get('_id'));
+    conn.dialler.dialled.push(conn.item.get('_id'));
     this.emit('update');
     this.emit('item', conn.item);
 
@@ -437,7 +428,7 @@ class PhoneModule extends EventEmitter {
   }
 
   /**
-   * pause dialer
+   * pause dialler
    *
    * @param props 
    */
@@ -446,9 +437,9 @@ class PhoneModule extends EventEmitter {
     const conn = this.connections.get(props.page.get('_id'));
    
     // set status
-    if (conn.dialer) {
+    if (conn.dialler) {
       // paused
-      conn.dialer.status = 'dialing';
+      conn.dialler.status = 'dialing';
     }
 
     // next
@@ -456,7 +447,7 @@ class PhoneModule extends EventEmitter {
   }
 
   /**
-   * pause dialer
+   * pause dialler
    *
    * @param props 
    */
@@ -465,15 +456,15 @@ class PhoneModule extends EventEmitter {
     const conn = this.connections.get(props.page.get('_id'));
    
     // set status
-    if (conn.dialer) {
+    if (conn.dialler) {
       // paused
-      conn.dialer.status = 'paused';
+      conn.dialler.status = 'paused';
     }
     this.emit('update');
   }
 
   /**
-   * pause dialer
+   * pause dialler
    *
    * @param props 
    */
@@ -482,81 +473,11 @@ class PhoneModule extends EventEmitter {
     const conn = this.connections.get(props.page.get('_id'));
    
     // set status
-    if (conn.dialer) {
+    if (conn.dialler) {
       // paused
-      delete conn.dialer;
+      delete conn.dialler;
     }
     this.emit('update');
-  }
-
-  /**
-   * loads phone stats
-   *
-   * @param props 
-   */
-  async stats(props) {
-    // get event model
-    const eventModel = props.page.get('data.event.model');
-
-    // get fields
-    const fields = this.fields(props);
-
-    // event model
-    if (!eventModel) return;
-
-    // yesterday
-    const yesterday = moment().subtract(1, 'day').toDate();
-
-    // fields
-    const typeField = this.field(props, 'type', fields);
-    const userField = this.field(props, 'user', fields);
-    const dateField = this.field(props, 'date', fields);
-
-    // return
-    if (!dateField || !typeField || !userField) return {};
-
-    // page
-    const eventPage = props.dashup.page(eventModel);
-
-    // get ids
-    const typeId = typeField.name || typeField.uuid;
-    const userId = userField.name || userField.uuid;
-    const dateId = dateField.name || dateField.uuid;
-
-    // update
-    return {
-      stats : {
-        calls : {
-          avg : await eventPage.gt(`${dateId}.start`, yesterday).or({
-            [typeId] : 'call:outbound',
-          }, {
-            [typeId] : 'call:inbound',
-          }).avg(null, userId),
-          total : await eventPage.gt(`${dateId}.start`, yesterday).where({
-            [userId] : props.dashup.get('_meta.member'),
-          }).or({
-            [typeId] : 'call:outbound',
-          }, {
-            [typeId] : 'call:inbound',
-          }).count(),
-        },
-        duration : {
-          avg : await eventPage.gt(`${dateId}.start`, yesterday)
-            .gt(`${dateId}.duration`, 0).or({
-            [typeId] : 'call:outbound',
-          }, {
-            [typeId] : 'call:inbound',
-          }).avg(`${dateId}.duration`, userId),
-          total : await eventPage.gt(`${dateId}.start`, yesterday).where({
-            [userId] : props.dashup.get('_meta.member'),
-          }).gt(`${dateId}.duration`, 0).or({
-            [typeId] : 'call:outbound',
-          }, {
-            [typeId] : 'call:inbound',
-          }).sum(`${dateId}.duration`),
-        }
-      },
-    }
   }
 
   /**
@@ -573,17 +494,17 @@ class PhoneModule extends EventEmitter {
     const itemID = item.get('_id');
 
     // get fields
-    const fields = this.fields(props);
+    const fields = this.getFields(props, [props.page.get('data.event.form')]);
 
     // get fields
-    const toField = this.field(props, 'to', fields) || {};
-    const typeField = this.field(props, 'type', fields) || {};
-    const itemField = this.field(props, 'item', fields) || {};
-    const bodyField = this.field(props, 'body', fields) || {};
-    const dateField = this.field(props, 'date', fields) || {};
-    const userField = this.field(props, 'user', fields) || {};
-    const fromField = this.field(props, 'from', fields) || {};
-    const titleField = this.field(props, 'title', fields) || {};
+    const toField = this.getField(props, 'to', fields) || {};
+    const typeField = this.getField(props, 'type', fields) || {};
+    const itemField = this.getField(props, 'item', fields) || {};
+    const bodyField = this.getField(props, 'body', fields) || {};
+    const dateField = this.getField(props, 'date', fields) || {};
+    const userField = this.getField(props, 'user', fields) || {};
+    const fromField = this.getField(props, 'from', fields) || {};
+    const titleField = this.getField(props, 'title', fields) || {};
 
     // create event
     const newEvent = await props.dashup.action({
@@ -622,63 +543,167 @@ class PhoneModule extends EventEmitter {
   }
 
   /**
+   * get selected model
+   */
+  getModel(props) {
+    // check model
+    return props.block.model || props.model;
+  }
+
+  /**
+   * get selected forms
+   */
+  getForms(props) {
+    // forms
+    let forms = props.block.forms || [];
+
+    // check form
+    if (!forms.length && props.form) forms = [props.form];
+    if (!forms.length && props.forms) forms = props.forms;
+
+    // return forms
+    return forms;
+  }
+
+  /**
    * get field
    */
-  field(props, name, fields, contact = false) {
+  getField(props, name, fields, tld = 'event') {
     // return value
     return fields.find((field) => {
       // return fields
-      return field.uuid === props.page.get(`data.${contact ? 'field.' : 'event.'}${name}`);
+      return field.uuid === props.page.get(`data.${tld}.${name}`);
     });
   }
 
   /**
    * get fields
    */
-  fields(props, contact = false) {
-    // reduce
-    return contact ? props.context.fields : [props.page.get('data.event.form')].filter((i) => i).reduce((accum, id) => {
-      // get page
-      const page = props.dashup.page(id);
+  getFields(props, forms = null) {
+    // check props
+    if (!forms) forms = this.getForms(props);
 
-      // check page
-      if (!page || !page.get('data.fields')) return accum;
-
-      // loop fields
-      accum.push(...page.get('data.fields').map((f) => {
-        // return field
-        return {
-          ...f,
-
-          form : page.get('_id'),
-        };
-      }));
-
+    // return fields
+    return Array.from(props.dashup.get('pages').values()).filter((page) => {
+      // return model pages
+      return page.get('type') === 'form' && forms.includes(page.get('_id'));
+    }).reduce((accum, page) => {
+      // fields
+      accum.push(...(page.get('data.fields') || []));
+      
       // return accum
       return accum;
     }, []);
   }
 
   /**
-   * gets items
-   *
-   * @param props 
+   * get query
    */
-  items(props, items, count, { next, prev }) {
-    // connection
-    const conn = this.connections.get(props.page.get('_id'));
+  getQuery(props) {
+    // get model
+    const model = this.getModel(props);
+    const forms = this.getForms(props);
+    const fields = this.getFields(props, forms);
 
-    // set items
-    if (Array.isArray(items)) {
-      // set items
-      conn.next  = next;
-      conn.prev  = prev;
-      conn.count = count;
-      conn.items = items;
-      
-      // update
-      return this.emit('update');
+    // set query
+    let query = props.dashup.page(model);
+
+    // check items
+    if (forms.length) {
+      // loop forms
+      query = query.in('_meta.form', forms);
     }
+
+    // load filter
+    let filter = null;
+
+    // check page filter
+    if (props.page.get('data.model') === model) {
+      // try/catch
+      try {
+        filter = JSON.parse(props.page.get('data.filter'));
+      } catch (e) {}
+    }
+    
+    // try/catch
+    try {
+      filter = JSON.parse(props.block.filter);
+    } catch (e) {}
+
+    // add initial where
+    if (filter) {
+      // add wheres
+      filter.forEach((where) => {
+        // where
+        query = query.where(where);
+      });
+    }
+
+    // search
+    if (props.search && props.search.length) {
+      // add search
+      query = query.search(props.search);
+    }
+
+    // test by user
+    if ((props.page.get('user.filter') || {}).me) {
+      // get user fields
+      const userFields = (fields || []).filter((f) => (props.page.get('data.user') || []).includes(f.uuid));
+      
+      // loop fields
+      query = query[userFields.length > 1 ? 'or' : 'where'](...(userFields.map((userField) => {
+        // return or
+        return {
+          [userField.name || userField.uuid] : props.dashup.get('_meta.member'),
+        };
+      })));
+    }
+
+    // user query
+    (props.page.get('user.where') || []).forEach((where) => {
+      // types
+      const numberTypes = ['gt', 'lt', 'gte', 'lte'];
+
+      // add query
+      query = query[where[0]](where[1], numberTypes.includes(where[0]) ? parseFloat(where[2]) : where[2]);
+    });
+
+    // check vals
+    const tagFields = (fields || []).filter((f) => (props.page.get('data.tag') || []).includes(f.uuid));
+
+    // get tags
+    const userTags = (props.page.get('user.filter.tags') || []).filter((id) => {
+      // return find
+      return tagFields.find((t) => {
+        // check id
+        return (t.options || []).find((o) => o.value === id);
+      });
+    });
+
+    // get filter tags
+    if (userTags.length) {
+      // loop fields
+      query = query[tagFields.length > 1 ? 'or' : 'where'](...(tagFields.map((tagField) => {
+        // return or
+        return {
+          [tagField.name || tagField.uuid] : userTags,
+        };
+      })));
+    }
+
+    // check sort
+    if (props.page.get('data.sort.id')) {
+      // get field
+      const sortField = props.page.get('data.sort.sort') ? {
+        name : props.page.get('data.sort.sort'),
+      } : fields.find((f) => f.uuid === props.page.get('data.sort.id'));
+
+      // sort by that
+      if (sortField) query = query.sort(sortField.name || sortField.uuid, props.page.get('data.sort.way'));
+    }
+
+    // return query
+    return query;
   }
 }
 

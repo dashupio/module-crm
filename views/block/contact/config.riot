@@ -1,0 +1,134 @@
+<block-contact-config>
+  <div>
+    <div class="mb-3">
+      <label class="form-label">
+        Name
+      </label>
+      <input name="name" class="form-control" type="text" value={ props.block.name || '' } onchange={ (e) => onName(e) } />
+    </div>
+
+    <hr />
+      
+    <div class="mb-3">
+      <div class="form-check form-switch">
+        <input class="form-check-input" id="is-required" type="checkbox" onchange={ (e) => onBackground(e) } { ...getProps({ checked : !props.block.background }) }>
+        <label class="form-check-label" for="is-required">
+          Enable Background
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <script>
+
+    // export config
+    export default class BlockContactConfig {
+
+
+      // ////////////////////////////////////////////////////////////////////////////
+      //
+      // RIOT METHODS
+      //
+      // ////////////////////////////////////////////////////////////////////////////
+
+      /**
+       * on before mount
+       */
+      onBeforeMount() {
+        // bind methods
+        this.onName = this.onName.bind(this);
+      }
+
+      /**
+       * get props
+       */
+      getProps(obj) {
+        // return get props
+        return Object.keys(obj).reduce((accum, key) => {
+          // set accum
+          if (obj[key]) accum[key] = true;
+
+          // return accum
+          return accum;
+        }, {});
+      }
+
+
+      // ////////////////////////////////////////////////////////////////////////////
+      //
+      // EVENT METHODS
+      //
+      // ////////////////////////////////////////////////////////////////////////////
+
+      /**
+       * on color
+       */
+      onName(e) {
+        // prevent
+        e.preventDefault();
+        e.stopPropagation();
+
+        // set color
+        this.props.set('name', e.target.value);
+      }
+
+      /**
+       * on model
+       */
+      onBackground (e) {
+        // get value
+        const val = $(e.target).is(':checked');
+
+        // get backlog
+        const background = !val;
+        
+        // set model
+        this.props.set('background', background);
+      }
+
+
+      // ////////////////////////////////////////////////////////////////////////////
+      //
+      // GET METHODS
+      //
+      // ////////////////////////////////////////////////////////////////////////////
+
+
+      // ////////////////////////////////////////////////////////////////////////////
+      //
+      // MISC METHODS
+      //
+      // ////////////////////////////////////////////////////////////////////////////
+
+      /**
+       * ref
+       */
+      ref(name) {
+        // set refs
+        if (!this.refs) this.refs = {};
+
+        // return ref function
+        return (that) => {
+          // set ref
+          this.refs[name] = that;
+        };
+      }
+
+      /**
+       * set loading
+       */
+      loading(type, way) {
+        // set loading
+        if (!this.__loading) this.__loading = new Map();
+
+        // check loading
+        if (!type) return !!Array.from(this.__loading.values()).find((v) => v);
+        if (typeof way === 'undefined') return !!this.__loading.get(type);
+
+        // set loading
+        this.__loading.set(type, way);
+        this.update();
+      }
+    }
+  </script>
+</block-contact-config>

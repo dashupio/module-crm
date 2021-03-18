@@ -1,0 +1,263 @@
+<block-contact-view>
+  <div class={ `flex-1 d-flex flex-column h-100 w-100${props.block.background ? '' : ' card'}` }>
+    <div if={ props.block.name } class={ props.block.background ? ' mb-2' : 'card-header' }>
+      <b>{ props.block.name }</b>
+    </div>
+    <div class={ props.block.background ? 'd-flex' : 'card-header' }>
+      <ul class="nav nav-tabs w-100">
+        <li class="nav-item">
+          <a class={ `nav-link${state.tab === 'note' ? ' active' : ''}` } href="#!" onclick={ (e) => onTab(e, 'note') }>
+            Note
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class={ `nav-link${state.tab === 'email' ? ' active' : ''}` } href="#!" onclick={ (e) => onTab(e, 'email') }>
+            Email
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class={ `nav-link${state.tab === 'sms' ? ' active' : ''}` } href="#!" onclick={ (e) => onTab(e, 'sms') }>
+            SMS
+          </a>
+        </li>
+      </ul>
+    </div>
+    <div class={ `flex-column oy-scroll ${props.block.background ? ' flex-1' : ' card-body'}` }>
+      <div if={ state.tab === 'email' }>
+        <label class="form-label">
+          Email
+        </label>
+        <input class="form-control mb-3" placeholder="Subject" ref="subject" />
+        <editor name="email" show-toolbar={ true } ref={ ref('email') } placeholder="Content" />
+      </div>
+      <div if={ state.tab === 'sms' }>
+        <label class="form-label">
+          SMS Message
+        </label>
+        <input class="form-control" type="text" id="sms" />
+      </div>
+      <div if={ state.tab === 'note' }>
+        <label class="form-label">
+          Note
+        </label>
+        <textarea class="form-control" type="text" id="note" />
+      </div>
+    </div>
+    <div if={ props.item } class={ `${props.block.background ? ' mt-2' : ' card-footer'}` }>
+      <button if={ state.tab === 'email' } class={ `btn btn-success${loading('email') ? ' disabled' : ''}${getValue('email') ? '' : ' disabled'}` } onclick={ (e) => onEmail(e) }>
+        { loading('email') ? 'Sending...' : 'Send' }
+      </button>
+      <button if={ state.tab === 'sms' } class={ `btn btn-success${loading('sms') ? ' disabled' : ''}` } onclick={ (e) => onSMS(e) }>
+        { loading('sms') ? 'Sending...' : 'Send' }
+      </button>
+      <button if={ state.tab === 'note' } class={ `btn btn-success${loading('note') ? ' disabled' : ''}` } onclick={ (e) => onNote(e) }>
+        { loading('note') ? 'Submitting...' : 'Submit' }
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // dot prop
+    import dotProp from 'dot-prop';
+    import PerfectScrollbar from 'perfect-scrollbar';
+
+    // export default
+    export default class BlockContactView {
+
+      /**
+       * on before mount
+       */
+      onBeforeMount() {
+        // set tab
+        this.state.tab = 'note';
+      }
+
+      /**
+       * on mounted
+       */
+      onMounted() {
+        // check frontend
+        if (typeof window === 'undefined') return;
+        
+        // fix column sizing
+        if (this.$('.oy-scroll') && !this.$('.oy-scroll.ps')) {
+          // ps
+          this.ps = new PerfectScrollbar(this.$('.oy-scroll'), {
+            suppressScrollX : true,
+          });
+        }
+      }
+
+      /**
+       * on tab
+       */
+      onTab(e, tab) {
+        // prevent default
+        e.preventDefault();
+        e.stopPropagation();
+
+        // update tab
+        this.update({
+          tab,
+        });
+      }
+
+      /**
+       * get value
+       */
+      getValue(name, tld) {
+        // get item
+        const item = this.props.item || this.props.current;
+
+        // return field
+        const field = this.props.context.fields.find((f) => f.uuid === this.props.page.get(`data.field.${name}`));
+
+        // return value
+        return dotProp.get(item.toJSON(), `${field.name || field.uuid}${tld ? `.${tld}` : ''}`);
+      }
+
+      /**
+       * has email
+       */
+      getEmail() {
+        // return email
+        return (this.props.page.get('connects') || []).find((c) => c.email);
+      }
+      
+      /**
+       * on send
+       */
+      async onEmail(e) {
+        // prevent default
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+
+        // get item
+        const item = this.props.item || this.props.current;
+
+        // check email
+        if (!item || !this.getValue('email')) return;
+
+        // check sms
+        const body = this.refs.email.val();
+        const subject = this.$('[ref="subject"]').value;
+        const connect = this.getEmail();
+
+        // loading
+        this.loading('email', true);
+        
+        // submit form
+        await this.props.dashup.action({
+          type   : 'connect',
+          user   : this.props.me.get('_id'),
+          page   : this.props.page.get('_id'),
+          form   : this.props.page.get('data.event.form'),
+          model  : this.props.page.get('data.event.model'),
+          struct : connect.type,
+        }, 'send', connect, {
+          body,
+          subject, 
+          to : this.getValue('email'),
+          item : item.get('_id'),
+          user : this.props.dashup.get('_meta.member'),
+        });
+
+        // loading
+        this.loading('email', false);
+      }
+
+      /**
+       * on send
+       */
+      async onSMS(e) {
+        // prevent default
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+
+        // check sms
+        const body = this.$('#sms').value;
+        this.$('#sms').value = '';
+
+        // loading
+        this.loading('sms', true);
+
+        // create call
+        await this.props.phone.sms(this.props, this.props.item || this.props.current, body);
+
+        // loading
+        this.loading('sms', false);
+      }
+      
+      /**
+       * on send
+       */
+      async onNote(e) {
+        // prevent default
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+
+        // check sms
+        const body = this.$('#note').value;
+        this.$('#note').value = '';
+
+        // loading
+        this.loading('note', true);
+
+        // add event
+        await this.props.phone.event(this.props, {
+          body,
+          item  : this.props.item || this.props.current,
+          type  : 'note',
+          time  : new Date(),
+          title : 'Added Note',
+        });
+
+        // loading
+        this.loading('note', false);
+      }
+
+
+      // ////////////////////////////////////////////////////////////////////////////
+      //
+      // MISC METHODS
+      //
+      // ////////////////////////////////////////////////////////////////////////////
+
+      /**
+       * ref
+       */
+      ref(name) {
+        // set refs
+        if (!this.refs) this.refs = {};
+
+        // return ref function
+        return (that) => {
+          // set ref
+          this.refs[name] = that;
+        };
+      }
+
+      /**
+       * set loading
+       */
+      loading(type, way) {
+        // set loading
+        if (!this.__loading) this.__loading = new Map();
+
+        // check loading
+        if (!type) return !!Array.from(this.__loading.values()).find((v) => v);
+        if (typeof way === 'undefined') return !!this.__loading.get(type);
+
+        // set loading
+        this.__loading.set(type, way);
+        this.update();
+      }
+    }
+  </script>
+</block-contact-view>

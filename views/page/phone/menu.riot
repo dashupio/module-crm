@@ -1,5 +1,5 @@
 <page-phone-menu>
-  <div>
+  <div if={ !props.altering }>
     <!-- NUMBERS -->
     <button if={ connection && connection.number && !connection.call } class="btn btn-link mr-2" data-toggle="tooltip" title="Calling Number">
       { connection.number }
@@ -55,29 +55,37 @@
     </div>
     <!-- / CALL METHODS -->
 
+    <!-- CURRENT ITEM -->
+    <div if={ connection && connection.item && !connection.call } class="btn-group mr-2">
+      <button class="btn btn-primary" onclick={ (e) => onCall(e) } data-toggle="tooltip" title="Start Call">
+        <i class={ `fat fa-phone` } />
+      </button>
+    </div>
+    <!-- / CURRENT ITEM -->
+
     <!-- POWER DIALLER -->
     <div if={ connection } class="btn-group mr-2">
-      <button if={ !connection.dialer } class="btn btn-primary" onclick={ (e) => onDialer(e) } data-toggle="tooltip" title="Start Dialer">
+      <button if={ !connection.dialler } class="btn btn-primary" onclick={ (e) => onDialler(e) } data-toggle="tooltip" title="Start Dialler">
         <i class="fat fa-play mr-2" />
-        Start Dialer
+        Dialler
       </button>
-      <button if={ connection.dialer } class="btn btn-primary" data-toggle="tooltip" title="Dialer Status">
-        { ucfirst(connection.dialer.status) } - 
-        { connection.dialer.dialled.length } of { connection.count }
+      <button if={ connection.dialler } class="btn btn-primary" data-toggle="tooltip" title="Dialler Status">
+        { ucfirst(connection.dialler.status) } - 
+        { connection.dialler.dialled.length } of { connection.count }
       </button>
-      <button if={ connection.dialer && connection.dialer.status === 'dialing' } class="btn btn-info" onclick={ (e) => onNext(e) } data-toggle="tooltip" title="Next Call">
+      <button if={ connection.dialler && connection.dialler.status === 'dialing' } class="btn btn-info" onclick={ (e) => onNext(e) } data-toggle="tooltip" title="Next Call">
         <i class="fa fa-forward" />
       </button>
-      <button if={ connection.dialer && connection.dialer.status === 'dialing' } class="btn btn-danger" onclick={ (e) => onPause(e) } data-toggle="tooltip" title="Pause Dialer">
+      <button if={ connection.dialler && connection.dialler.status === 'dialing' } class="btn btn-danger" onclick={ (e) => onPause(e) } data-toggle="tooltip" title="Pause Dialler">
         <i class="fa fa-pause" />
       </button>
-      <button if={ connection.dialer && connection.dialer.status === 'paused' } class="btn btn-success" onclick={ (e) => onPlay(e) } data-toggle="tooltip" title="Start Dialer">
+      <button if={ connection.dialler && connection.dialler.status === 'paused' } class="btn btn-success" onclick={ (e) => onPlay(e) } data-toggle="tooltip" title="Start Dialler">
         <i class="fa fa-play" />
       </button>
-      <button if={ connection.dialer && connection.dialer.status === 'paused' } class="btn btn-danger" onclick={ (e) => onFinish(e) } data-toggle="tooltip" title="End Dialer">
+      <button if={ connection.dialler && connection.dialler.status === 'paused' } class="btn btn-danger" onclick={ (e) => onFinish(e) } data-toggle="tooltip" title="End Dialler">
         <i class="fa fa-times" />
       </button>
-      <button if={ connection.dialer && connection.dialer.status === 'finished' } class="btn btn-danger" onclick={ (e) => onFinish(e) } data-toggle="tooltip" title="End Dialer">
+      <button if={ connection.dialler && connection.dialler.status === 'finished' } class="btn btn-danger" onclick={ (e) => onFinish(e) } data-toggle="tooltip" title="End Dialler">
         <i class="fa fa-times" />
       </button>
     </div>
@@ -130,11 +138,20 @@
     </div>
     <!-- / DISPLAY -->
 
-    <!-- DISPLAY -->
-    <button class="btn btn-light" onclick={ (e) => onDisplay(e) } data-toggle="tooltip" title="Toggle View">
-      <i class={ `fat fa-${props.page.get('user.display') === 'grid' ? 'columns' : 'th'}` } />
+    <button class="mr-2 btn btn-link text-dark" onclick={ (e) => onAlter(e) }>
+      <i class="fat fa-pencil mr-2" />
+      Alter Display
     </button>
-    <!-- / DISPLAY -->
+  </div>
+  <div if={ props.altering }>
+    <button class="btn btn-dark mr-2" onclick={ (e) => onCreate(e) }>
+      <i class="fa fa-plus mr-2" />
+      Block
+    </button>
+    <button class="mr-2 btn btn-primary" onclick={ (e) => onAlter(e) }>
+      <i class="fat fa-check mr-2"></i>
+      Finish Altering
+    </button>
   </div>
 
   <script>
@@ -282,6 +299,30 @@
       // EVENT METHODS
       //
       // ////////////////////////////////////////////////////////////////////////////
+      
+      /**
+       * on create
+       */
+      onCreate(e) {
+        // prevent default
+        e.preventDefault();
+        e.stopPropagation();
+
+        // create
+        this.props.page.emit('create', true);
+      }
+
+      /**
+       * on alter
+       */
+      onAlter(e) {
+        // prevent default
+        e.preventDefault();
+        e.stopPropagation();
+
+        // props
+        this.props.props('altering', !this.props.altering);
+      }
 
       /**
        * on accept
@@ -290,14 +331,6 @@
         // update
         this.connection.call.answered = new Date();
         this.connection.conn.accept();
-      }
-
-      /**
-       * on display
-       */
-      onDisplay(e) {
-        // update
-        this.props.user('display', this.props.page.get('user.display') === 'grid' ? 'list' : 'grid');
       }
 
       /**
@@ -329,15 +362,15 @@
       }
 
       /**
-       * start dialer
+       * start dialler
        */
-      onDialer(e) {
+      onDialler(e) {
         // prevent default
         e.preventDefault();
         e.stopPropagation();
 
         // set in props
-        this.phone.dialer(this.props, uuid());
+        this.phone.dialler(this.props, uuid());
       }
 
       /**
@@ -353,50 +386,62 @@
       }
 
       /**
-       * next dialer
+       * on call
+       */
+      onCall(e) {
+        // prevent default
+        e.preventDefault();
+        e.stopPropagation();
+
+        // create call
+        this.phone.start(this.props, this.connection.item);
+      }
+
+      /**
+       * next dialler
        */
       onNext(e) {
         // prevent default
         e.preventDefault();
         e.stopPropagation();
 
-        // pause dialer
+        // pause dialler
         this.phone.next(this.props);
       }
 
       /**
-       * pause dialer
+       * pause dialler
        */
       onPlay(e) {
         // prevent default
         e.preventDefault();
         e.stopPropagation();
 
-        // pause dialer
+        // pause dialler
         this.phone.play(this.props);
       }
 
       /**
-       * pause dialer
+       * pause dialler
        */
       onPause(e) {
         // prevent default
         e.preventDefault();
         e.stopPropagation();
 
-        // pause dialer
+        // pause dialler
         this.phone.pause(this.props);
       }
 
       /**
-       * pause dialer
+       * pause dialler
        */
       onFinish(e) {
         // prevent default
         e.preventDefault();
         e.stopPropagation();
 
-        // pause dialer
+        // pause dialler
         this.phone.finish(this.props);
       }
 

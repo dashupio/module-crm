@@ -1,5 +1,5 @@
-<page-phone-event>
-  <div class={ `card card-sm card-task card-${getColor()}` } if={ props.event && props.event.get && types[getValue('type')] }>
+<block-events-item>
+  <div class={ `card card-sm card-task card-${getColor()}` } if={ props.item && props.item.get && types[getValue('type')] }>
     <div if={ getColor() } class="color-strip" />
 
     <div class="card-body d-flex align-items-center">
@@ -19,7 +19,7 @@
           { getValue('body') }
         </p>
         <small>
-          { moment(getValue('date')).format('Do MMM, h:mma') }
+          { moment(props.item.get('_meta.created_at')).format('Do MMM, h:mma') }
         </small>
         <small if={ dotProp.get(getValue('date'), 'duration') } class="ml-2">
           <b>
@@ -41,7 +41,7 @@
             <button class="btn btn-primary" onclick={ (e) => onTogglePlay(e) }>
               <i class={ `fa fa-${state.play ? 'pause' : 'play'}` } />
             </button>
-            <a class="btn btn-primary" download={ `${props.event.get('_id')}` } target="_BLANK" href={ dotProp.get(getValue('recording'), '0.url') }>
+            <a class="btn btn-primary" download={ `${props.item.get('_id')}` } target="_BLANK" href={ dotProp.get(getValue('recording'), '0.url') }>
               <i class="fa fa-download" />
             </a>
           </div>
@@ -186,16 +186,16 @@
         if (!this.props.phone) return;
 
         // fields
-        this.fields = this.fields || this.props.phone.fields(this.props);
+        this.fields = this.fields || this.props.phone.getFields(this.props, [this.props.page.get('data.event.form')]);
 
         // field
-        const field = this.props.phone.field(this.props, name, this.fields);
+        const field = this.fields.find((f) => f.uuid === this.props.page.get(`data.event.${name}`));
 
         // return
         if (!field) return;
 
         // get value
-        return this.props.event.get(field.name || field.uuid);
+        return this.props.item.get(field.name || field.uuid);
       }
 
       /**
@@ -212,7 +212,7 @@
         if (!options.length) return [];
 
         // get value
-        let val = this.props.event.get(tagField.name || tagField.uuid) || [];
+        let val = this.props.item.get(tagField.name || tagField.uuid) || [];
 
         // set value
         if (typeof val === 'string') val = [val];
@@ -229,7 +229,7 @@
        */
       getTagTypes() {
         // fields
-        this.fields = this.fields || this.props.phone.fields(this.props);
+        this.fields = this.fields || this.props.phone.getFields(this.props, [this.props.page.get('data.event.form')]);
 
         // set types
         let types = (this.props.page.get('data.event.status') || []);
@@ -266,4 +266,4 @@
       height : 2.5rem;
     }
   </style>
-</page-phone-event>
+</block-events-item>

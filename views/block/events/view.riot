@@ -1,0 +1,303 @@
+<block-events-view>
+  <div class={ `flex-1 d-flex flex-column h-100 w-100${props.block.background ? '' : ' card'}` }>
+    <div if={ props.block.name } class={ props.block.background ? ' mb-2' : 'card-header' }>
+      <b>{ props.block.name }</b>
+    </div>
+    <div class={ `oy-scroll flex-column flex-1${props.block.background ? '' : ' card-body'}` }>
+      <div if={ loading('list') } class="text-center">
+        <i class="fa fa-spinner fa-spin" />
+      </div>
+      <block-events-item each={ (item, i) in state.list } item={ item } { ...getProps() } />
+    </div>
+  </div>
+
+  <script>
+    // import scrollbar
+    import PerfectScrollbar from 'perfect-scrollbar';
+
+    // import item
+    import blockEventsItem from './item.riot';
+
+    // export default
+    export default class BlockEventsView {
+
+      /**
+       * local components
+       */
+      static get components() {
+        // return components
+        return {
+          blockEventsItem,
+        };
+      }
+
+      /**
+       * on before mount
+       */
+      onBeforeMount(...args) {
+        // check frontend
+        if (typeof window === 'undefined') return;
+
+        // set state
+        this.state.skip  = 0;
+        this.state.limit = 25;
+
+        // bind methods
+        this.getQuery = this.getQuery.bind(this);
+
+        // set current
+        this.current = this.props.current || new this.props.dashup.Model();
+
+        // safe update
+        this.safeUpdate = () => {
+          this.update();
+        };
+      }
+
+      /**
+       * on before mount
+       */
+      onBeforeUnmount(...args) {
+        // check frontend
+        if (typeof window === 'undefined') return;
+
+        // check listening
+        if (this.state.list && this.state.list.removeListener) {
+          // remove current listener and deafen
+          this.state.list.removeListener('update', this.safeUpdate);
+          this.state.list.deafen();
+        }
+      }
+
+      /**
+       * on mounted
+       */
+      onMounted() {
+        // check frontend
+        if (typeof window === 'undefined') return;
+        
+        // fix column sizing
+        if (this.$('.oy-scroll') && !this.$('.oy-scroll.ps')) {
+          // ps
+          this.ps = new PerfectScrollbar(this.$('.oy-scroll'), {
+            suppressScrollX : true,
+          });
+        }
+
+        // load list
+        this.loadList();
+      }
+
+      /**
+       * on mounted
+       */
+      onUpdated() {
+        // check frontend
+        if (typeof window === 'undefined') return;
+        
+        // check current
+        if (this.props.item && this.current.get('_id') !== this.props.item.get('_id')) {
+          // set item
+          this.current = this.props.item;
+          this.loadList();
+        } else if (!this.props.item && this.current.get('_id')) {
+          // set current
+          this.current = new this.props.dashup.Model();
+          this.loadList();
+        }
+      }
+
+
+      // ////////////////////////////////////////////////////////////////////////////
+      //
+      // GET METHODS
+      //
+      // ////////////////////////////////////////////////////////////////////////////
+
+      /**
+       * load list
+       */
+      async loadList() {
+        // check model
+        if (!this.getSelectedModel()) return;
+
+        // get query
+        const query = this.getQuery();
+
+        // loading
+        this.loading('list', true);
+
+        // check listening
+        if (this.state.list && this.state.list.removeListener) {
+          // remove current listener and deafen
+          this.state.list.removeListener('update', this.safeUpdate);
+          this.state.list.deafen();
+        }
+
+        // list
+        const list = await query.skip(this.state.skip).limit(this.state.limit).listen();
+
+        // safe update
+        list.on('update', this.safeUpdate);
+        
+        // update state
+        this.update({
+          list,
+        });
+
+        // loading
+        this.loading('list', false);
+      }
+
+      /**
+       * get selected model
+       */
+      getSelectedModel() {
+        // check model
+        return this.props.block.model || this.props.page.get('data.event.model');
+      }
+
+      /**
+       * get selected forms
+       */
+      getSelectedForms() {
+        // forms
+        let forms = this.props.block.forms || [];
+
+        // check form
+        if (!forms.length && this.props.page.get('data.event.form')) forms = [this.props.page.get('data.event.form')];
+
+        // return forms
+        return forms;
+      }
+
+      /**
+       * get props
+       */
+      getProps() {
+        // clone
+        const newProps = { ...(this.props) };
+
+        // delete
+        delete newProps.type;
+        delete newProps.view;
+        delete newProps.item;
+        delete newProps.class;
+        delete newProps.struct;
+        delete newProps.fields;
+
+        // return
+        return newProps;
+      }
+
+      /**
+       * get fields
+       */
+      getFields(forms) {
+        // get forms
+        if (!forms) forms = this.getSelectedForms();
+
+        // return fields
+        return Array.from(this.props.dashup.get('pages').values()).filter((page) => {
+          // return model pages
+          return page.get('type') === 'form' && forms.includes(page.get('_id'));
+        }).reduce((accum, page) => {
+          // fields
+          accum.push(...(page.get('data.fields') || []));
+          
+          // return accum
+          return accum;
+        }, []);
+      }
+
+      /**
+       * get query
+       */
+      getQuery() {
+        // set query
+        let query = this.props.dashup.page(this.getSelectedModel());
+
+        // forms
+        const forms = this.getSelectedForms();
+        const fields = this.props.page.get('data.event.form') ? this.getFields([this.props.page.get('data.event.form')]) : [];
+
+        // check items
+        if (forms.length) {
+          // loop forms
+          query = query.in('_meta.form', forms);
+        }
+
+        // load filter
+        let filter = null;
+
+        // try/catch
+        try {
+          filter = JSON.parse(this.props.block.filter);
+        } catch (e) {}
+
+        // add initial where
+        if (filter) {
+          // add wheres
+          filter.forEach((where) => {
+            // where
+            query = query.where(where);
+          });
+        }
+
+        // add current
+        if (this.current.get('_id') && this.props.page.get('data.event.item')) {
+          // get model field
+          const field = fields.find((f) => f.uuid === this.props.page.get('data.event.item'));
+
+          // laod
+          query = query.where({
+            [field.name || field.uuid] : this.current.get('_id'),
+          });
+        }
+
+        // sort
+        query = query.sort('created_at', -1);
+ 
+        // return query
+        return query;
+      }
+
+
+      // ////////////////////////////////////////////////////////////////////////////
+      //
+      // MISC METHODS
+      //
+      // ////////////////////////////////////////////////////////////////////////////
+
+      /**
+       * ref
+       */
+      ref(name) {
+        // set refs
+        if (!this.refs) this.refs = {};
+
+        // return ref function
+        return (that) => {
+          // set ref
+          this.refs[name] = that;
+        };
+      }
+
+      /**
+       * set loading
+       */
+      loading(type, way) {
+        // set loading
+        if (!this.__loading) this.__loading = new Map();
+
+        // check loading
+        if (!type) return !!Array.from(this.__loading.values()).find((v) => v);
+        if (typeof way === 'undefined') return !!this.__loading.get(type);
+
+        // set loading
+        this.__loading.set(type, way);
+        this.update();
+      }
+    }
+  </script>
+</block-events-view>
