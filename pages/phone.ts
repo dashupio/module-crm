@@ -28,7 +28,7 @@ export default class PhonePage extends Struct {
     // incoming
     this.smsIncomingAction = this.smsIncomingAction.bind(this);
     this.callIncomingAction = this.callIncomingAction.bind(this);
-    this.callOutgoingAction = this.callIncomingAction.bind(this);
+    this.callOutgoingAction = this.callOutgoingAction.bind(this);
     this.callRecordingAction = this.callRecordingAction.bind(this);
   }
 
@@ -409,9 +409,7 @@ export default class PhonePage extends Struct {
       form   : '5fa8f1ba5cc2fcc84ff61ec4',
       page   : '5fa8f1ad5cc2fcc84ff61ec0',
       dashup : '5efdbeafdd5a8af0344187ed',
-    }, 'model').where({
-      dashup : opts.dashup,
-    }).ne('phone', null).where({
+    }, 'model').ne('phone', null).where({
       'number.number'           : body.To,
       'order.payments.0.status' : 'active',
     }).findOne();
@@ -443,21 +441,19 @@ export default class PhonePage extends Struct {
     const eventNumber = (item.get('data.fields') || []).find((f) => f.uuid === page.get('data.field.phone'));
 
     // find or create item
-    let contact = await new Query({
+    let contacts = await new Query({
       page   : page.get('data.model'),
       model  : page.get('data.model'),
       dashup : page.get('_meta.dashup'),
-    }, 'model').where({
-      dashup : opts.dashup,
-    }).ne('phone', null).where({
+    }, 'model').ne('phone', null).where({
       '_meta.model' : page.get('data.model'),
       [`${eventNumber.name || eventNumber.uuid}.number`] : body.From,
-    }).findOne();
+    }).find();
 
     // if no item
-    if (!contact) {
+    if (!contacts || !contacts.length) {
       // create item
-      contact = new Model({
+      contacts = [new Model({
         _meta : {
           form  : page.get('data.form'),
           page  : page.get('_id'),
@@ -465,10 +461,10 @@ export default class PhonePage extends Struct {
         },
 
         [eventNumber.name || eventNumber.uuid] : body.From,
-      }, 'model');
+      }, 'model')];
 
       // save item
-      await item.save({
+      await contacts[0].save({
         form  : page.get('data.form'),
         page  : page.get('_id'),
         model : page.get('data.model'),
@@ -491,7 +487,7 @@ export default class PhonePage extends Struct {
       },
 
       [typeField.name || typeField.uuid]   : 'sms:inbound',
-      [itemField.name || itemField.uuid]   : [item.get('_id')],
+      [itemField.name || itemField.uuid]   : contacts.map((c) => c.get('_id')),
       [bodyField.name || bodyField.uuid]   : `${body.Body}`,
       [timeField.name || timeField.uuid]   : new Date(),
       [titleField.name || titleField.uuid] : `SMS From ${body.From} to ${body.To}`,
@@ -515,6 +511,9 @@ export default class PhonePage extends Struct {
    * @param body 
    */
   async callIncomingAction(opts, body) {
+    // domain
+    const domain = this.dashup.config.url.includes('.dev') ? 'dashup.dev' : 'dashup.io';
+
     // query model
     const number = await new Query({
       form   : '5fa8f1ba5cc2fcc84ff61ec4',
@@ -547,7 +546,7 @@ export default class PhonePage extends Struct {
 <Response>
   <Dial record="record-from-ringing-dual"
   trim="do-not-trim"
-  recordingStatusCallback="https://dashup.io/api/call/recording/${encodeURIComponent(to)}/${encodeURIComponent(from)}/incoming"
+  recordingStatusCallback="https://${domain}/api/call/recording/${encodeURIComponent(to)}/${encodeURIComponent(from)}/incoming"
   recordingStatusCallbackEvent="completed">
     <Client>${member.get('user.id')}</Client>
   </Dial>
@@ -566,7 +565,7 @@ export default class PhonePage extends Struct {
 <Response>
   <Dial record="record-from-ringing-dual"
   trim="do-not-trim"
-  recordingStatusCallback="https://dashup.io/api/call/recording/${encodeURIComponent(to)}/${encodeURIComponent(from)}/incoming"
+  recordingStatusCallback="https://${domain}/api/call/recording/${encodeURIComponent(to)}/${encodeURIComponent(from)}/incoming"
   recordingStatusCallbackEvent="completed">
     <Client>
       <Number>
@@ -584,6 +583,9 @@ export default class PhonePage extends Struct {
    * @param body 
    */
   async callOutgoingAction(opts, body) {
+    // domain
+    const domain = this.dashup.config.url.includes('.dev') ? 'dashup.dev' : 'dashup.io';
+
     // get details
     const {
       to,
@@ -599,9 +601,9 @@ export default class PhonePage extends Struct {
       page   : '5fa8f1ad5cc2fcc84ff61ec0',
       dashup : '5efdbeafdd5a8af0344187ed',
     }, 'model').where({
-      dashup : opts.dashup,
+      dashup : dashup,
     }).ne('phone', null).where({
-      'number.number'           : body.To,
+      'number.number'           : from,
       'order.payments.0.status' : 'active',
     }).findOne();
 
@@ -617,7 +619,7 @@ export default class PhonePage extends Struct {
 <Response>
   <Dial callerId="${from}" record="record-from-ringing-dual"
   trim="do-not-trim"
-  recordingStatusCallback="https://dashup.io/api/call/recording/${encodeURIComponent(to)}/${encodeURIComponent(from)}/${encodeURIComponent(event)}/outgoing"
+  recordingStatusCallback="https://${domain}/api/call/recording/${encodeURIComponent(to)}/${encodeURIComponent(from)}/${encodeURIComponent(event)}/outgoing"
   recordingStatusCallbackEvent="completed">
     <Number>${to}</Number>
   </Dial>
@@ -639,10 +641,7 @@ export default class PhonePage extends Struct {
       form   : '5fa8f1ba5cc2fcc84ff61ec4',
       page   : '5fa8f1ad5cc2fcc84ff61ec0',
       dashup : '5efdbeafdd5a8af0344187ed',
-    }, 'model').where({
-      dashup : opts.dashup,
-    }).ne('phone', null).where({
-      'number.number'           : body.To,
+    }, 'model').ne('phone', null).in('number.number', [from, to]).where({
       'order.payments.0.status' : 'active',
     }).findOne();
 
