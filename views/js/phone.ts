@@ -16,9 +16,6 @@ class PhoneModule extends EventEmitter {
     // connections
     this.connections = new Map();
 
-    // done
-    this.__done = [];
-
     // status interval
     this.__status = setInterval(() => {
       // connection values
@@ -57,9 +54,6 @@ class PhoneModule extends EventEmitter {
   async init({ props }) {
     // check connections
     if (this.connections.has(props.page.get('_id'))) return this.connections.get(props.page.get('_id'));
-
-    // done
-    this.__done = [];
 
     // set connection
     this.connections.set(props.page.get('_id'), {
@@ -157,6 +151,9 @@ class PhoneModule extends EventEmitter {
 
     // connection
     const conn = this.connections.get(page.get('_id'));
+
+    // count
+    conn.count = await this.getQuery(props).count();
     
     // check number
     if (!conn.number) {
@@ -357,9 +354,12 @@ class PhoneModule extends EventEmitter {
    * @param props 
    * @param id 
    */
-  dialler(props, id) {
+  async dialler(props, id) {
     // connection
     const conn = this.connections.get(props.page.get('_id'));
+
+    // count
+    conn.count = await this.getQuery(props).count();
 
     // set number
     if (!conn.dialler || conn.dialler.id !== id) {
@@ -383,11 +383,32 @@ class PhoneModule extends EventEmitter {
   async next(props) {
     // connection
     const conn = this.connections.get(props.page.get('_id'));
+    const forms = this.getForms(props);
+    const fields = this.getFields(props, forms);
 
     // check item
-    if (conn.item) {
+    if (conn.item && conn.dialler.dialled && !conn.dialler.dialled.includes(conn.item.get('_id'))) {
       // add to used
-      this.__done.push(conn.item.get('_id'));
+      conn.dialler.dialled.push(conn.item.get('_id'));
+    }
+
+    // let sort
+    let way = props.page.get('data.sort.way') || 1;
+    let sort = 'created_at';
+
+    // check sort
+    if (props.page.get('data.sort.id')) {
+      // get field
+      const sortField = props.page.get('data.sort.sort') ? {
+        name : props.page.get('data.sort.sort'),
+      } : fields.find((f) => f.uuid === props.page.get('data.sort.id'));
+
+      // sort by that
+      if (sortField) {
+        // sort
+        way = props.page.get('data.sort.way') === 1 ? 1 : -1;
+        sort = sortField.name || sortField.uuid;
+      }
     }
 
     // check dialler
@@ -397,19 +418,32 @@ class PhoneModule extends EventEmitter {
     if (conn.conn) return conn.conn.disconnect();
 
     // get query
+    let query = this.getQuery(props);
 
+    // load where nin
+    if (conn.dialler.dialled.length) {
+      // not in
+      query = query.nin('_id', conn.dialler.dialled);
+    }
+
+    // gt
+    if (conn.item) {
+      // get value
+      let val = conn.item.get(sort);
+
+      // check sort
+      if (sort === 'created_at') val = conn.item.get('_meta.created_at');
+      if (sort === 'updated_at') val = conn.item.get('_meta.updated_at');
+
+      // query
+      query = query[way === -1 ? 'lte' : 'gte'](sort, val);
+    }
 
     // set item
-    conn.item = [...(conn.items || [])].filter((item) => !conn.dialler.dialled.includes(item.get('_id')))[0];
+    conn.item = await query.findOne();
 
-    // check more
-    if (!conn.item && conn.more()) {
-      // await load
-      await conn.next();
-
-      // run again
-      this.next(props);
-    }
+    // on item
+    props.onItem(null, conn.item, false);
 
     // check item
     if (!conn.item) {
@@ -439,11 +473,15 @@ class PhoneModule extends EventEmitter {
     // set status
     if (conn.dialler) {
       // paused
-      conn.dialler.status = 'dialing';
+      conn.dialler.status = 'dialling';
     }
 
     // next
-    this.next(props);
+    if (conn.item) {
+      this.start(props, conn.item);
+    } else {
+      this.next(props);
+    }
   }
 
   /**
@@ -547,7 +585,7 @@ class PhoneModule extends EventEmitter {
    */
   getModel(props) {
     // check model
-    return props.block.model || props.model;
+    return props.page.get('data.model');
   }
 
   /**
@@ -555,11 +593,12 @@ class PhoneModule extends EventEmitter {
    */
   getForms(props) {
     // forms
-    let forms = props.block.forms || [];
+    let form = props.page.get('data.form');
+    let forms = props.page.get('data.forms') || [];
 
     // check form
-    if (!forms.length && props.form) forms = [props.form];
-    if (!forms.length && props.forms) forms = props.forms;
+    if (!forms.length && form) forms = [form];
+    if (!forms.length && forms) forms = forms;
 
     // return forms
     return forms;

@@ -228,11 +228,11 @@
         }
 
         // load filter
-        let filter = null;
-
+        let filter = [];
+        
         // try/catch
         try {
-          filter = JSON.parse(this.props.block.filter);
+          filter.push(...(JSON.parse(this.props.block.filter)));
         } catch (e) {}
 
         // add initial where

@@ -10,7 +10,7 @@
             Note
           </a>
         </li>
-        <li class="nav-item">
+        <li if={ getEmail() } class="nav-item">
           <a class={ `nav-link${state.tab === 'email' ? ' active' : ''}` } href="#!" onclick={ (e) => onTab(e, 'email') }>
             Email
           </a>
@@ -23,7 +23,7 @@
       </ul>
     </div>
     <div class={ `flex-column oy-scroll ${props.block.background ? ' flex-1' : ' card-body'}` }>
-      <div if={ state.tab === 'email' }>
+      <div if={ getEmail() && state.tab === 'email' }>
         <label class="form-label">
           Email
         </label>
@@ -159,7 +159,7 @@
         }, 'send', connect, {
           body,
           subject, 
-          to : this.getValue('email'),
+          to   : this.getValue('email'),
           item : item.get('_id'),
           user : this.props.dashup.get('_meta.member'),
         });

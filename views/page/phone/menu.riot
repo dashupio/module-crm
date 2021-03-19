@@ -73,10 +73,10 @@
         { ucfirst(connection.dialler.status) } - 
         { connection.dialler.dialled.length } of { connection.count }
       </button>
-      <button if={ connection.dialler && connection.dialler.status === 'dialing' } class="btn btn-info" onclick={ (e) => onNext(e) } data-toggle="tooltip" title="Next Call">
+      <button if={ connection.dialler && connection.dialler.status === 'dialling' } class="btn btn-info" onclick={ (e) => onNext(e) } data-toggle="tooltip" title="Next Call">
         <i class="fa fa-forward" />
       </button>
-      <button if={ connection.dialler && connection.dialler.status === 'dialing' } class="btn btn-danger" onclick={ (e) => onPause(e) } data-toggle="tooltip" title="Pause Dialler">
+      <button if={ connection.dialler && connection.dialler.status === 'dialling' } class="btn btn-danger" onclick={ (e) => onPause(e) } data-toggle="tooltip" title="Pause Dialler">
         <i class="fa fa-pause" />
       </button>
       <button if={ connection.dialler && connection.dialler.status === 'paused' } class="btn btn-success" onclick={ (e) => onPlay(e) } data-toggle="tooltip" title="Start Dialler">
@@ -276,6 +276,7 @@
         if (typeof window === 'undefined') return;
 
         // tooltip
+        $('body > .tooltip').remove();
         $('[data-toggle="tooltip"]').tooltip();
       }
 

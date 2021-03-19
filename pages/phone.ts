@@ -225,17 +225,16 @@ export default class PhonePage extends Struct {
    * @param opts 
    * @param data 
    */
-  async sendAction(opts, { body, from, to}) {
+  async sendAction(opts, { body, from, to }) {
     // query model
     const number = await new Query({
       form   : '5fa8f1ba5cc2fcc84ff61ec4',
       page   : '5fa8f1ad5cc2fcc84ff61ec0',
       dashup : '5efdbeafdd5a8af0344187ed',
     }, 'model').where({
-      page   : opts.page,
       dashup : opts.dashup,
     }).ne('phone', null).where({
-      number                    : from,
+      'number.number'           : from,
       'order.payments.0.status' : 'active',
     }).findOne();
 
@@ -248,12 +247,15 @@ export default class PhonePage extends Struct {
     const client = this.client();
 
     // create
-    client.messages
-      .create({
-        to,
-        body,
-        from,
-      });
+    try {
+      // await create
+      await client.messages
+        .create({
+          to,
+          body,
+          from,
+        });
+    } catch (e) {}
 
     // return data
     return true;
