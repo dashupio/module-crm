@@ -546,7 +546,7 @@ export default class PhonePage extends Struct {
 <Response>
   <Dial record="record-from-ringing-dual"
   trim="do-not-trim"
-  recordingStatusCallback="https://${domain}/api/call/recording/${encodeURIComponent(to)}/${encodeURIComponent(from)}/incoming"
+  recordingStatusCallback="https://${domain}/api/call/recording/${encodeURIComponent(body.To)}/${encodeURIComponent(body.From)}/incoming"
   recordingStatusCallbackEvent="completed">
     <Client>${member.get('user.id')}</Client>
   </Dial>
@@ -565,13 +565,9 @@ export default class PhonePage extends Struct {
 <Response>
   <Dial record="record-from-ringing-dual"
   trim="do-not-trim"
-  recordingStatusCallback="https://${domain}/api/call/recording/${encodeURIComponent(to)}/${encodeURIComponent(from)}/incoming"
+  recordingStatusCallback="https://${domain}/api/call/recording/${encodeURIComponent(body.To)}/${encodeURIComponent(body.From)}/incoming"
   recordingStatusCallbackEvent="completed">
-    <Client>
-      <Number>
-        ${page.get('data.forward')}
-      </Number>
-    </Client>
+    ${page.get('data.forward')}
   </Dial>
 </Response>`;
   }
