@@ -2,7 +2,7 @@
 // import page interface
 import Twilio from 'twilio';
 import { v4 as uuid } from 'uuid';
-import { Struct, Query } from '@dashup/module';
+import { Struct, Query, Model } from '@dashup/module';
 
 /**
  * build address helper
@@ -24,6 +24,12 @@ export default class PhonePage extends Struct {
     this.sendAction     = this.sendAction.bind(this);
     this.numbersAction  = this.numbersAction.bind(this);
     this.purchaseAction = this.purchaseAction.bind(this);
+    
+    // incoming
+    this.smsIncomingAction = this.smsIncomingAction.bind(this);
+    this.callIncomingAction = this.callIncomingAction.bind(this);
+    this.callOutgoingAction = this.callIncomingAction.bind(this);
+    this.callRecordingAction = this.callRecordingAction.bind(this);
   }
 
   /**
@@ -126,6 +132,11 @@ export default class PhonePage extends Struct {
 
       numbers  : this.numbersAction,
       purchase : this.purchaseAction,
+
+      'sms.incoming' : this.smsIncomingAction,
+      'call.incoming' : this.callIncomingAction,
+      'call.outgoing' : this.callOutgoingAction,
+      'call.recording' : this.callRecordingAction,
     };
   }
 
@@ -384,5 +395,309 @@ export default class PhonePage extends Struct {
 
     // return numbers
     return numbers;
+  }
+
+  /**
+   * incoming sms action
+   *
+   * @param opts 
+   * @param body 
+   */
+  async smsIncomingAction(opts, body) {
+    // query model
+    const number = await new Query({
+      form   : '5fa8f1ba5cc2fcc84ff61ec4',
+      page   : '5fa8f1ad5cc2fcc84ff61ec0',
+      dashup : '5efdbeafdd5a8af0344187ed',
+    }, 'model').where({
+      dashup : opts.dashup,
+    }).ne('phone', null).where({
+      'number.number'           : body.To,
+      'order.payments.0.status' : 'active',
+    }).findOne();
+
+    // end
+    if (!number) return null;
+
+    // load form
+    const page = await new Query({
+      ...opts,
+
+      dashup : number.get('dashup'),
+    }, 'page').findById(number.get('page'));
+
+    // end
+    if (!page) return null;
+
+    // get form
+    const [form, item] = await new Query({
+      ...opts,
+
+      dashup : number.get('dashup'),
+    }, 'page').findByIds([page.get('data.event.form'), page.get('data.forms.0')]);
+
+    // if page
+    if (!form || !item) return null;
+
+    // item field
+    const eventNumber = (item.get('data.fields') || []).find((f) => f.uuid === page.get('data.field.phone'));
+
+    // find or create item
+    let contact = await new Query({
+      page   : page.get('data.model'),
+      model  : page.get('data.model'),
+      dashup : page.get('_meta.dashup'),
+    }, 'model').where({
+      dashup : opts.dashup,
+    }).ne('phone', null).where({
+      '_meta.model' : page.get('data.model'),
+      [`${eventNumber.name || eventNumber.uuid}.number`] : body.From,
+    }).findOne();
+
+    // if no item
+    if (!contact) {
+      // create item
+      contact = new Model({
+        _meta : {
+          form  : page.get('data.form'),
+          page  : page.get('_id'),
+          model : page.get('data.model'),
+        },
+
+        [eventNumber.name || eventNumber.uuid] : body.From,
+      }, 'model');
+
+      // save item
+      await item.save({
+        form  : page.get('data.form'),
+        page  : page.get('_id'),
+        model : page.get('data.model'),
+      });
+    }
+
+    // get fields
+    const typeField = (form.get('data.fields') || []).find((f) => f.uuid === page.get('data.event.type'));
+    const itemField = (form.get('data.fields') || []).find((f) => f.uuid === page.get('data.event.item'));
+    const bodyField = (form.get('data.fields') || []).find((f) => f.uuid === page.get('data.event.body'));
+    const timeField = (form.get('data.fields') || []).find((f) => f.uuid === page.get('data.event.time'));
+    const titleField = (form.get('data.fields') || []).find((f) => f.uuid === page.get('data.event.title'));
+
+    // log number
+    const incoming = new Model({
+      _meta : {
+        form  : page.get('data.event.form'),
+        page  : page.get('_id'),
+        model : page.get('data.event.model'),
+      },
+
+      [typeField.name || typeField.uuid]   : 'sms:inbound',
+      [itemField.name || itemField.uuid]   : [item.get('_id')],
+      [bodyField.name || bodyField.uuid]   : `${body.Body}`,
+      [timeField.name || timeField.uuid]   : new Date(),
+      [titleField.name || titleField.uuid] : `SMS From ${body.From} to ${body.To}`,
+    }, 'model');
+
+    // save
+    await incoming.save({
+      form  : page.get('data.event.form'),
+      page  : page.get('_id'),
+      model : page.get('data.event.model'),
+    });
+
+    // end
+    return true;
+  }
+
+  /**
+   * call incoming action
+   *
+   * @param opts 
+   * @param body 
+   */
+  async callIncomingAction(opts, body) {
+    // query model
+    const number = await new Query({
+      form   : '5fa8f1ba5cc2fcc84ff61ec4',
+      page   : '5fa8f1ad5cc2fcc84ff61ec0',
+      dashup : '5efdbeafdd5a8af0344187ed',
+    }, 'model').where({
+      dashup : opts.dashup,
+    }).ne('phone', null).where({
+      'number.number'           : body.To,
+      'order.payments.0.status' : 'active',
+    }).findOne();
+
+    // end
+    if (!number) return null;
+
+    // dial all clients
+    const member = await new Query({
+      form   : '5fa8f1ba5cc2fcc84ff61ec4',
+      page   : '5fa8f1ad5cc2fcc84ff61ec0',
+      dashup : number.get('dashup'),
+    }, 'member').where({
+      page   : number.get('page'),
+      status : 'active',
+    }).findOne();
+
+    // check member
+    if (member) {
+      // return string
+      return `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Dial record="record-from-ringing-dual"
+  trim="do-not-trim"
+  recordingStatusCallback="https://dashup.io/api/call/recording/${encodeURIComponent(to)}/${encodeURIComponent(from)}/incoming"
+  recordingStatusCallbackEvent="completed">
+    <Client>${member.get('user.id')}</Client>
+  </Dial>
+</Response>`;
+    }
+
+    // load form
+    const page = await new Query({
+      ...opts,
+
+      dashup : number.get('dashup'),
+    }, 'page').findById(number.get('page'));
+
+    // return item
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Dial record="record-from-ringing-dual"
+  trim="do-not-trim"
+  recordingStatusCallback="https://dashup.io/api/call/recording/${encodeURIComponent(to)}/${encodeURIComponent(from)}/incoming"
+  recordingStatusCallbackEvent="completed">
+    <Client>
+      <Number>
+        ${page.get('data.forward')}
+      </Number>
+    </Client>
+  </Dial>
+</Response>`;
+  }
+
+  /**
+   * call outgoing
+   *
+   * @param opts 
+   * @param body 
+   */
+  async callOutgoingAction(opts, body) {
+    // get details
+    const {
+      to,
+      page,
+      from,
+      event,
+      dashup,
+    } = (body || {});
+
+    // query model
+    const number = await new Query({
+      form   : '5fa8f1ba5cc2fcc84ff61ec4',
+      page   : '5fa8f1ad5cc2fcc84ff61ec0',
+      dashup : '5efdbeafdd5a8af0344187ed',
+    }, 'model').where({
+      dashup : opts.dashup,
+    }).ne('phone', null).where({
+      'number.number'           : body.To,
+      'order.payments.0.status' : 'active',
+    }).findOne();
+
+    // return
+    if (!number) return `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Say voice="woman">Please purchase or select a number to make calls.</Say>
+  <Reject />
+</Response>`;
+
+    // return call
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Dial callerId="${from}" record="record-from-ringing-dual"
+  trim="do-not-trim"
+  recordingStatusCallback="https://dashup.io/api/call/recording/${encodeURIComponent(to)}/${encodeURIComponent(from)}/${encodeURIComponent(event)}/outgoing"
+  recordingStatusCallbackEvent="completed">
+    <Number>${to}</Number>
+  </Dial>
+</Response>`;
+  }
+
+  /**
+   * call recording action
+   *
+   * @param opts 
+   * @param body 
+   */
+  async callRecordingAction(opts, body, params) {
+    // get to/from/dir
+    const { to, from, event, dir } = params;
+
+    // find numbers
+    const number = await new Query({
+      form   : '5fa8f1ba5cc2fcc84ff61ec4',
+      page   : '5fa8f1ad5cc2fcc84ff61ec0',
+      dashup : '5efdbeafdd5a8af0344187ed',
+    }, 'model').where({
+      dashup : opts.dashup,
+    }).ne('phone', null).where({
+      'number.number'           : body.To,
+      'order.payments.0.status' : 'active',
+    }).findOne();
+
+    // if no number
+    if (!number) return null;
+
+    // load form
+    const page = await new Query({
+      ...opts,
+
+      dashup : number.get('dashup'),
+    }, 'page').findById(number.get('page'));
+
+    // end
+    if (!page) return null;
+
+    // call page
+    const form = await new Query({
+      ...opts,
+
+      dashup : number.get('dashup'),
+    }, 'page').findById(page.get('data.event.form'));
+    
+    // check form
+    if (!form) return null;
+
+    // type item
+    const dateField = (form.get('data.fields') || []).find((f) => f.uuid === page.get('data.event.date'));
+    const recordingField = (form.get('data.fields') || []).find((f) => f.uuid === page.get('data.event.recording'));
+
+    // query model
+    const lastCall = await new Query({
+      form  : page.get('data.event.form'),
+      page  : page.get('_id'),
+      model : page.get('data.event.model'),
+    }, 'model').findById(event);
+
+    // last call
+    if (!lastCall) return null;
+
+    // try/catch
+    try {
+      // set on last call
+      if (dateField) lastCall.set(`${dateField.name || dateField.uuid}.duration`, parseInt(body.RecordingDuration) * 1000);
+      if (recordingField) lastCall.set(recordingField.name || recordingField.uuid, body.RecordingUrl);
+
+      // save
+      await lastCall.save({
+        form  : page.get('data.event.form'),
+        page  : page.get('_id'),
+        model : page.get('data.event.model'),
+      });
+    } catch (e) {}
+
+    // return true
+    return true;
   }
 }
