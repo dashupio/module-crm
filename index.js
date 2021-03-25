@@ -3,6 +3,8 @@ const axios = require('axios');
 const { Module } = require('@dashup/module');
 
 // import base
+const BulkPage = require('./pages/bulk');
+const BulkBlock = require('./blocks/bulk');
 const SMSAction = require('./actions/sms');
 const PhonePage = require('./pages/phone');
 const EventsBlock = require('./blocks/events');
@@ -28,12 +30,14 @@ class CRMModule extends Module {
    */
   register(fn) {
     // register pages
+    fn('page', BulkPage);
     fn('page', PhonePage);
 
     // register actions
     fn('action', SMSAction);
 
     // register blocks
+    fn('block', BulkBlock);
     fn('block', EventsBlock);
     fn('block', ContactBlock);
   }

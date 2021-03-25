@@ -1,0 +1,278 @@
+<page-bulk-view>
+
+  <div class="d-flex flex-column flex-1">
+    <!-- CHECKS -->
+    <a if={ !props.page.get('data.model') } href="#!" class="d-block alert alert-info mb-3" onclick={ (e) => props.onConfig(e) }>
+      <i class="fa fa-exclamation-triangle mr-2" />
+      Please select a <b>model</b> for this page.
+    </a>
+    <a if={ !props.page.get('data.forms.0') } href="#!" class="d-block alert alert-info mb-3" onclick={ (e) => props.onConfig(e) }>
+      <i class="fa fa-exclamation-triangle mr-2" />
+      Please select at least one <b>form</b> for this page.
+    </a>
+    <a if={ !getEmail() } href="#!" class="d-block alert alert-info mb-3" onclick={ (e) => props.onConfig(e) }>
+      <i class="fa fa-exclamation-triangle mr-2" />
+      Please buy or connect an <b>email</b> for this page.
+    </a>
+    <!-- / CHECKS -->
+
+    <!-- DASHBOARD -->
+    <template if={ props.page.get('data.model') && props.page.get('data.forms.0') }>
+      <dashup-view preview={ !props.altering } view="dashboard" type="page" struct="dashboard" blocks={ getBlocks() } on-select={ (item) => onSelect(item) } is-selected={ (item) => isSelected(item) } { ...getProps() } />
+    </template>
+    <!-- / DASHBOARD -->
+  </div>
+
+  <script>
+    // perfect
+    import moment from 'moment';
+    import dotProp from 'dot-prop';
+    import PerfectScrollbar from 'perfect-scrollbar';
+    import { v4 as uuid } from 'uuid';
+
+    // export default
+    export default class PageBulkView {
+
+
+      // ////////////////////////////////////////////////////////////////////////////
+      //
+      // RIOT METHODS
+      //
+      // ////////////////////////////////////////////////////////////////////////////
+
+      /**
+       * local components
+       */
+      static get components() {
+        // return components
+        return {
+          
+        };
+      }
+
+      /**
+       * on before mount
+       */
+      onBeforeMount(...args) {
+        // check frontend
+        if (typeof window === 'undefined') return;
+
+        // safe update
+        this.safeUpdate = () => {
+          this.update();
+        };
+
+        // default blocks
+        this.defaultBlocks = [
+          {
+            uuid  : uuid(),
+            type  : 'grid',
+            _grid : {
+              x : 0,
+              y : 1,
+              w : 6,
+              h : 5,
+            },
+          },
+          {
+            uuid    : uuid(),
+            type    : 'chart',
+            color   : 'success',
+            model   : this.props.page.get('data.event.model') || null,
+            metric  : 'sum',
+            display : '{{ value }} Opens',
+            _grid : {
+              x : 0,
+              y : 0,
+              w : 3,
+              h : 1
+            },
+          },
+          {
+            uuid    : uuid(),
+            type    : 'chart',
+            color   : 'primary',
+            model   : this.props.page.get('data.event.model') || null,
+            metric  : 'count',
+            filter  : '[{"$and":[{"type":{"$eq":"email:outbound"}}]}]',
+            display : '{{ value }} Sent',
+            _grid : {
+              x : 3,
+              y : 0,
+              w : 3,
+              h : 1
+            },
+          },
+          {
+            uuid : uuid(),
+            type : 'bulk',
+            _grid : {
+              x : 6,
+              y : 0,
+              w : 6,
+              h : 6
+            },
+          },
+        ];
+
+        // check page
+        if (!this.props.page.get('data.blocks')) {
+          // set
+          this.props.page.set('data.blocks', this.defaultBlocks);
+          this.props.data('blocks', this.defaultBlocks);
+        }
+        
+        // on connects
+        this.props.page.on('connects', this.safeUpdate);
+      }
+
+      /**
+       * on before mount
+       */
+      onBeforeUnmount(...args) {
+        // check frontend
+        if (typeof window === 'undefined') return;
+        
+        // on connects
+        this.props.page.removeListener('connects', this.safeUpdate);
+      }
+
+      /**
+       * on click
+       */
+      onSelect(item) {
+        // check item
+        let items = this.props.items || [];
+
+        // on item
+        if (this.isSelected(item)) {
+          // items
+          items = items.filter((check) => check.get('_id') !== item.get('_id'));
+        } else {
+          items.push(item);
+        }
+
+        // do item
+        this.props.props('items', items);
+      }
+
+      /**
+       * is selected
+       */
+      isSelected(item) {
+        // check item
+        const items = this.props.items || [];
+
+        // return
+        return items.find((check) => check.get('_id') === item.get('_id'));
+      }
+
+      /**
+       * gets blocks
+       */
+      getBlocks() {
+        // return blocks
+        return this.props.blocks.filter((b) => (b.categories || []).includes('bulk') || (b.categories || []).includes('dashboard'));
+      }
+
+      /**
+       * get end call form
+       */
+      getForm() {
+        // get form
+        const form = this.props.page.get('data.modal');
+
+        // form
+        if (!form) return null;
+
+        // find form
+        return this.props.dashup.page(form);
+      }
+
+      /**
+       * get props
+       */
+      getProps(withoutPage) {
+        // clone
+        const newProps = { ...(this.props) };
+
+        // delete
+        delete newProps.type;
+        delete newProps.item;
+        delete newProps.view;
+        delete newProps.class;
+        delete newProps.blocks;
+        delete newProps.struct;
+        delete newProps.context;
+
+        // delete page
+        if (withoutPage) delete newProps.page;
+
+        // set context
+        const context = { ...(this.props.context || {}) };
+
+        // model/forms
+        newProps.model = this.props.page.get('data.model');
+        newProps.forms = this.props.page.get('data.forms') || [];
+        newProps.context = context;
+        newProps.connection = this.connection;
+
+        // return
+        return newProps;
+      }
+
+      /**
+       * has email
+       */
+      getEmail() {
+        // return email
+        return (this.props.page.get('connects') || []).find((c) => c.email);
+      }
+
+
+      // ////////////////////////////////////////////////////////////////////////////
+      //
+      // MISC METHODS
+      //
+      // ////////////////////////////////////////////////////////////////////////////
+
+      /**
+       * ref
+       */
+      ref(name) {
+        // set refs
+        if (!this.refs) this.refs = {};
+
+        // return ref function
+        return (that) => {
+          // set ref
+          this.refs[name] = that;
+        };
+      }
+
+      /**
+       * classes
+       */
+      classes(obj) {
+        // return object
+        return Object.keys(obj).filter((k) => obj[k]).join(' ');
+      }
+
+      /**
+       * set loading
+       */
+      loading(type, way) {
+        // set loading
+        if (!this.__loading) this.__loading = new Map();
+
+        // check loading
+        if (!type) return !!Array.from(this.__loading.values()).find((v) => v);
+        if (typeof way === 'undefined') return !!this.__loading.get(type);
+
+        // set loading
+        this.__loading.set(type, way);
+        this.update();
+      }
+    }
+  </script>
+</page-bulk-view>

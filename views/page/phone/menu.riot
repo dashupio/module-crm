@@ -1,10 +1,10 @@
 <page-phone-menu>
   <div if={ !props.altering }>
     <!-- NUMBERS -->
-    <button if={ connection && connection.number && !connection.call } class="btn btn-link mr-2" data-toggle="tooltip" title="Calling Number">
+    <button if={ connection && connection.number && !connection.call && state.numbers.length === 1 } class="btn btn-link mr-2" data-toggle="tooltip" title="Calling Number">
       { connection.number }
     </button>
-    <div if={ state.numbers && state.numbers.length > 1 && (!connection || !connection.call) } class="btn-group dropdown mr-2" data-toggle="tooltip" title="Calling Number">
+    <div if={ state.numbers && state.numbers.length > 1 && (!connection || !connection.call) } class="d-inline dropdown mr-2" data-toggle="tooltip" title="Calling Number">
       <button class={ `btn btn-${connection && connection.number ? 'light' : 'info'}` } id="dropdown-number" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
         { connection && connection.number || 'Select Number' }
       </button>

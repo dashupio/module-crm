@@ -1,0 +1,59 @@
+<page-bulk-menu>
+  <div>
+    <div if={ !props.altering }>
+      <button class="mr-2 btn btn-link text-dark" onclick={ (e) => onAlter(e) }>
+        <i class="fat fa-pencil mr-2" />
+        Alter Display
+      </button>
+    </div>
+    <div if={ props.altering }>
+      <button class="btn btn-dark mr-2" onclick={ (e) => onCreate(e) }>
+        <i class="fa fa-plus mr-2" />
+        Block
+      </button>
+      <button class="mr-2 btn btn-primary" onclick={ (e) => onAlter(e) }>
+        <i class="fat fa-check mr-2"></i>
+        Finish Altering
+      </button>
+    </div>
+  </div>
+
+  <script>
+
+    // export default
+    export default class PageBulkMenu {
+
+
+      // ////////////////////////////////////////////////////////////////////////////
+      //
+      // EVENT METHODS
+      //
+      // ////////////////////////////////////////////////////////////////////////////
+      
+      /**
+       * on create
+       */
+      onCreate(e) {
+        // prevent default
+        e.preventDefault();
+        e.stopPropagation();
+
+        // create
+        this.props.page.emit('create', true);
+      }
+
+      /**
+       * on alter
+       */
+      onAlter(e) {
+        // prevent default
+        e.preventDefault();
+        e.stopPropagation();
+
+        // props
+        this.props.props('altering', !this.props.altering);
+      }
+      
+    }
+  </script>
+</page-bulk-menu>

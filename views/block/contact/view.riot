@@ -157,11 +157,11 @@
           model  : this.props.page.get('data.event.model'),
           struct : connect.type,
         }, 'send', connect, {
-          body,
-          subject, 
           to   : this.getValue('email'),
           item : item.get('_id'),
           user : this.props.dashup.get('_meta.member'),
+          body,
+          subject, 
         });
 
         // loading

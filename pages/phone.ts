@@ -68,7 +68,7 @@ export default class PhonePage extends Struct {
 
     // return page data
     return {
-      tabs : ['Contacts', 'Events', 'Numbers', 'Calls', 'Connects'],
+      tabs : ['Contacts', 'Events', 'Numbers', 'Forwarding', 'Connects'],
 
       wizard : false ? null : {
         steps : [{
@@ -109,14 +109,14 @@ export default class PhonePage extends Struct {
   get views() {
     // return object of views
     return {
-      view     : 'page/phone/view',
-      menu     : 'page/phone/menu',
-      calls    : 'page/phone/calls',
-      filter   : 'page/phone/filter',
-      events   : 'page/phone/events',
-      numbers  : 'page/phone/numbers',
-      contacts : 'page/phone/contacts',
-      connects : 'page/phone/connects',
+      view       : 'page/phone/view',
+      menu       : 'page/phone/menu',
+      filter     : 'page/phone/filter',
+      events     : 'page/phone/events',
+      numbers    : 'page/phone/numbers',
+      contacts   : 'page/phone/contacts',
+      connects   : 'page/phone/connects',
+      forwarding : 'page/phone/forwarding',
     };
   }
 
@@ -472,6 +472,8 @@ export default class PhonePage extends Struct {
     }
 
     // get fields
+    const toField = (form.get('data.fields') || []).find((f) => f.uuid === page.get('data.event.to'));
+    const fromField = (form.get('data.fields') || []).find((f) => f.uuid === page.get('data.event.from'));
     const typeField = (form.get('data.fields') || []).find((f) => f.uuid === page.get('data.event.type'));
     const itemField = (form.get('data.fields') || []).find((f) => f.uuid === page.get('data.event.item'));
     const bodyField = (form.get('data.fields') || []).find((f) => f.uuid === page.get('data.event.body'));
@@ -486,6 +488,8 @@ export default class PhonePage extends Struct {
         model : page.get('data.event.model'),
       },
 
+      [toField.name || toField.uuid]       : body.To,
+      [fromField.name || fromField.uuid]   : body.From,
       [typeField.name || typeField.uuid]   : 'sms:inbound',
       [itemField.name || itemField.uuid]   : contacts.map((c) => c.get('_id')),
       [bodyField.name || bodyField.uuid]   : `${body.Body}`,
@@ -529,6 +533,93 @@ export default class PhonePage extends Struct {
     // end
     if (!number) return null;
 
+    // load form
+    const page = await new Query({
+      ...opts,
+
+      dashup : number.get('dashup'),
+    }, 'page').findById(number.get('page'));
+
+    // end
+    if (!page) return null;
+
+    // get form
+    const [form, item] = await new Query({
+      ...opts,
+
+      dashup : number.get('dashup'),
+    }, 'page').findByIds([page.get('data.event.form'), page.get('data.forms.0')]);
+
+    // item field
+    const eventNumber = (item.get('data.fields') || []).find((f) => f.uuid === page.get('data.field.phone'));
+
+    // find or create item
+    let contacts = await new Query({
+      page   : page.get('data.model'),
+      model  : page.get('data.model'),
+      dashup : page.get('_meta.dashup'),
+    }, 'model').ne('phone', null).where({
+      '_meta.model' : page.get('data.model'),
+      [`${eventNumber.name || eventNumber.uuid}.number`] : body.From,
+    }).find();
+
+    // if no item
+    if (!contacts || !contacts.length) {
+      // create item
+      contacts = [new Model({
+        _meta : {
+          form  : page.get('data.form'),
+          page  : page.get('_id'),
+          model : page.get('data.model'),
+        },
+
+        [eventNumber.name || eventNumber.uuid] : body.From,
+      }, 'model')];
+
+      // save item
+      await contacts[0].save({
+        form  : page.get('data.form'),
+        page  : page.get('_id'),
+        model : page.get('data.model'),
+      });
+    }
+
+    // get fields
+    const toField = (form.get('data.fields') || []).find((f) => f.uuid === page.get('data.event.to'));
+    const fromField = (form.get('data.fields') || []).find((f) => f.uuid === page.get('data.event.from'));
+    const typeField = (form.get('data.fields') || []).find((f) => f.uuid === page.get('data.event.type'));
+    const itemField = (form.get('data.fields') || []).find((f) => f.uuid === page.get('data.event.item'));
+    const bodyField = (form.get('data.fields') || []).find((f) => f.uuid === page.get('data.event.body'));
+    const timeField = (form.get('data.fields') || []).find((f) => f.uuid === page.get('data.event.time'));
+    const titleField = (form.get('data.fields') || []).find((f) => f.uuid === page.get('data.event.title'));
+
+    // log number
+    const incoming = new Model({
+      _meta : {
+        form  : page.get('data.event.form'),
+        page  : page.get('_id'),
+        model : page.get('data.event.model'),
+      },
+
+      [toField.name || toField.uuid]       : body.To,
+      [fromField.name || fromField.uuid]   : body.From,
+      [typeField.name || typeField.uuid]   : 'call:inbound',
+      [itemField.name || itemField.uuid]   : contacts.map((c) => c.get('_id')),
+      [bodyField.name || bodyField.uuid]   : `Received call from ${body.From} to ${body.To}`,
+      [timeField.name || timeField.uuid]   : new Date(),
+      [titleField.name || titleField.uuid] : `Call From ${body.From} to ${body.To}`,
+    }, 'model');
+
+    // save
+    await incoming.save({
+      form  : page.get('data.event.form'),
+      page  : page.get('_id'),
+      model : page.get('data.event.model'),
+    });
+
+    // event
+    const event = incoming.get('_id');
+
     // dial all clients
     const member = await new Query({
       form   : '5fa8f1ba5cc2fcc84ff61ec4',
@@ -546,29 +637,38 @@ export default class PhonePage extends Struct {
 <Response>
   <Dial record="record-from-ringing-dual"
   trim="do-not-trim"
-  recordingStatusCallback="https://${domain}/api/call/recording/${encodeURIComponent(body.To)}/${encodeURIComponent(body.From)}/incoming"
+  recordingStatusCallback="https://${domain}/api/call/recording/${encodeURIComponent(body.From)}/${encodeURIComponent(body.To)}/${encodeURIComponent(event)}/incoming"
   recordingStatusCallbackEvent="completed">
     <Client>${member.get('user.id')}</Client>
   </Dial>
 </Response>`;
     }
 
-    // load form
-    const page = await new Query({
-      ...opts,
-
-      dashup : number.get('dashup'),
-    }, 'page').findById(number.get('page'));
-
     // return item
-    return `<?xml version="1.0" encoding="UTF-8"?>
+    if (page.get('data.forward')) {
+      // return xml
+      return `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Dial record="record-from-ringing-dual"
   trim="do-not-trim"
-  recordingStatusCallback="https://${domain}/api/call/recording/${encodeURIComponent(body.To)}/${encodeURIComponent(body.From)}/incoming"
+  recordingStatusCallback="https://${domain}/api/call/recording/${encodeURIComponent(body.From)}/${encodeURIComponent(body.To)}/${encodeURIComponent(event)}/incoming"
   recordingStatusCallbackEvent="completed">
     ${page.get('data.forward')}
   </Dial>
+</Response>`;
+    }
+    
+    // return xml
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Say>
+    ${page.get('data.message') || `Sorry, we are unavailable right now. If you leave a message he will get back to you as soon as possible.`}
+  </Say>
+  <Record
+  trim="do-not-trim"
+  finishOnKey="*"
+  recordingStatusCallback="https://${domain}/api/call/recording/${encodeURIComponent(body.From)}/${encodeURIComponent(body.To)}/${encodeURIComponent(event)}/incoming"
+  recordingStatusCallbackEvent="completed" />
 </Response>`;
   }
 
