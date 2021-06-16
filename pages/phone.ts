@@ -1,7 +1,6 @@
 
 // import page interface
 import Twilio from 'twilio';
-import { v4 as uuid } from 'uuid';
 import { Struct, Query, Model } from '@dashup/module';
 
 /**
@@ -60,45 +59,244 @@ export default class PhonePage extends Struct {
    * returns page data
    */
   get data() {
-    // set ids
-    const ids = {
-      event   : uuid(),
-      contact : uuid(),
-    };
-
     // return page data
     return {
       tabs : ['Contacts', 'Events', 'Numbers', 'Forwarding', 'Connects'],
 
-      wizard : false ? null : {
-        steps : [{
-          _id   : ids.contact,
-          type  : 'model',
-          icon  : 'users fas',
-          title : 'Contact Model',
-        }, {
-          _id   : ids.event,
-          type  : 'model',
-          icon  : 'play fas',
-          title : 'Event Model',
-        }, {
-          _id    : uuid(),
-          type   : 'form',
-          icon   : 'plus fas',
-          title  : 'Create',
-          parent : ids.contact,
-        }, {
-          _id    : uuid(),
-          type   : 'form',
-          icon   : 'plus fas',
-          title  : 'Create',
-          parent : ids.event,
-        }],
-        base : {
-          data : {
-
-          }
-        }
+      default : {
+        title : 'The Phone page requires an Event and a Contact in order for it to be used, do you want us to create those pages?',
+        check : [
+          'data.event',
+          'data.model',
+        ],
+        pages : [
+          {
+            _id  : 'contact',
+            type : 'model',
+            icon : 'users fas',
+            name : 'Contact',
+            data : {
+              forms   : ['{{ contactform }}'],
+              columns : [
+                {
+                  id    : 'name',
+                  field : 'name',
+                  title : 'Name',
+                  order : 1,
+                  basis : 33.33,
+                },
+                {
+                  id    : 'email',
+                  field : 'email',
+                  title : 'Email',
+                  order : 2,
+                  basis : 33.33,
+                },
+                {
+                  id    : 'phone',
+                  field : 'phone',
+                  title : 'Phone',
+                  order : 3,
+                  basis : 33.33,
+                },
+              ]
+            },
+            parent : '{{ _id }}',
+          },
+          {
+            _id  : 'contactform',
+            type : 'form',
+            icon : 'plus fas',
+            name : `Create Contact`,
+            data : {
+              model  : '{{ contact }}',
+              fields : [
+                {
+                  type   : 'text',
+                  uuid   : 'name',
+                  name   : 'name',
+                  order  : 0,
+                  label  : 'Name',
+                  parent : 'root',
+                },
+                {
+                  type   : 'email',
+                  uuid   : 'email',
+                  name   : 'email',
+                  order  : 1,
+                  label  : 'Email',
+                  parent : 'root',
+                },
+                {
+                  type   : 'phone',
+                  uuid   : 'phone',
+                  name   : 'phone',
+                  order  : 2,
+                  label  : 'Phone',
+                  parent : 'root',
+                },
+                {
+                  type   : 'user',
+                  uuid   : 'user',
+                  name   : 'user',
+                  order  : 3,
+                  label  : 'User',
+                  parent : 'root',
+                },
+              ]
+            },
+            parent : '{{ contact }}',
+          },
+          {
+            _id  : 'event',
+            type : 'model',
+            icon : 'play fas',
+            name : 'Event',
+            data : {
+              forms   : ['{{ eventform }}'],
+              columns : [
+                {
+                  id    : 'user',
+                  field : 'user',
+                  title : 'User',
+                  order : 1,
+                  basis : 25,
+                },
+                {
+                  id    : 'type',
+                  field : 'type',
+                  title : 'Type',
+                  order : 2,
+                  basis : 25,
+                },
+                {
+                  id    : 'title',
+                  field : 'title',
+                  title : 'Title',
+                  order : 3,
+                  basis : 25,
+                },
+                {
+                  id    : 'recording',
+                  field : 'recording',
+                  title : 'Recording',
+                  order : 4,
+                  basis : 25,
+                },
+              ],
+            },
+            parent : '{{ _id }}',
+          },
+          {
+            _id  : 'eventform',
+            type : 'form',
+            icon : 'plus fas',
+            name : 'Create Event',
+            data : {
+              model  : '{{ event }}',
+              fields : [
+                {
+                  type   : 'model',
+                  uuid   : 'contact',
+                  name   : 'contact',
+                  form   : '{{ contactform }}',
+                  model  : '{{ contact }}',
+                  order  : 0,
+                  label  : 'Contact',
+                  parent : 'root',
+                },
+                {
+                  type   : 'date',
+                  uuid   : 'date',
+                  name   : 'date',
+                  order  : 1,
+                  label  : 'Date',
+                  parent : 'root',
+                },
+                {
+                  type   : 'phone',
+                  uuid   : 'to',
+                  name   : 'to',
+                  order  : 2,
+                  label  : 'To',
+                  parent : 'root',
+                },
+                {
+                  type   : 'phone',
+                  uuid   : 'from',
+                  name   : 'from',
+                  order  : 3,
+                  label  : 'From',
+                  parent : 'root',
+                },
+                {
+                  type   : 'text',
+                  uuid   : 'type',
+                  name   : 'type',
+                  order  : 4,
+                  label  : 'Type',
+                  parent : 'root',
+                },
+                {
+                  type   : 'text',
+                  uuid   : 'title',
+                  name   : 'title',
+                  order  : 5,
+                  label  : 'Title',
+                  parent : 'root',
+                },
+                {
+                  type   : 'textarea',
+                  uuid   : 'body',
+                  name   : 'body',
+                  order  : 6,
+                  label  : 'Body',
+                  parent : 'root',
+                },
+                {
+                  type   : 'user',
+                  uuid   : 'user',
+                  name   : 'user',
+                  order  : 7,
+                  label  : 'User',
+                  parent : 'root',
+                },
+                {
+                  type   : 'file',
+                  uuid   : 'recording',
+                  name   : 'recording',
+                  order  : 8,
+                  label  : 'Recording',
+                  parent : 'root',
+                },
+              ],
+            },
+            parent : '{{ event }}',
+          },
+        ],
+        replace : {
+          'data.user'  : 'user',
+          'data.forms' : ['{{ contactform }}'],
+          'data.model' : '{{ contact }}',
+          'data.event' : {
+            to        : 'to',
+            body      : 'body',
+            item      : 'contact',
+            from      : 'from',
+            form      : '{{ eventform }}',
+            type      : 'type',
+            user      : 'user',
+            date      : 'date',
+            title     : 'title',
+            model     : '{{ event }}',
+            recording : 'recording',
+          },
+          'data.field' : {
+            name  : 'name',
+            email : 'email',
+            phone : 'phone',
+          },
+        },
       },
     };
   }
@@ -109,7 +307,7 @@ export default class PhonePage extends Struct {
   get views() {
     // return object of views
     return {
-      view       : 'page/phone/view',
+      view       : 'page/phone',
       menu       : 'page/phone/menu',
       filter     : 'page/phone/filter',
       events     : 'page/phone/events',
@@ -211,7 +409,7 @@ export default class PhonePage extends Struct {
     const voiceGrant = new Twilio.jwt.AccessToken.VoiceGrant({
       incomingAllow          : true, // Optional: add to allow incoming calls
       outgoingApplicationSid : this.dashup.config.twilioApp,
-    }); 
+    });
 
     // create access token
     const token = new Twilio.jwt.AccessToken(
@@ -220,7 +418,7 @@ export default class PhonePage extends Struct {
       this.dashup.config.twilioSecret,
       {
         identity : opts.user
-      }
+      },
     );
     token.addGrant(voiceGrant);
 
@@ -477,7 +675,7 @@ export default class PhonePage extends Struct {
     const typeField = (form.get('data.fields') || []).find((f) => f.uuid === page.get('data.event.type'));
     const itemField = (form.get('data.fields') || []).find((f) => f.uuid === page.get('data.event.item'));
     const bodyField = (form.get('data.fields') || []).find((f) => f.uuid === page.get('data.event.body'));
-    const timeField = (form.get('data.fields') || []).find((f) => f.uuid === page.get('data.event.time'));
+    const dateField = (form.get('data.fields') || []).find((f) => f.uuid === page.get('data.event.date'));
     const titleField = (form.get('data.fields') || []).find((f) => f.uuid === page.get('data.event.title'));
 
     // log number
@@ -487,15 +685,16 @@ export default class PhonePage extends Struct {
         page  : page.get('_id'),
         model : page.get('data.event.model'),
       },
-
-      [toField.name || toField.uuid]       : body.To,
-      [fromField.name || fromField.uuid]   : body.From,
-      [typeField.name || typeField.uuid]   : 'sms:inbound',
-      [itemField.name || itemField.uuid]   : contacts.map((c) => c.get('_id')),
-      [bodyField.name || bodyField.uuid]   : `${body.Body}`,
-      [timeField.name || timeField.uuid]   : new Date(),
-      [titleField.name || titleField.uuid] : `SMS From ${body.From} to ${body.To}`,
     }, 'model');
+
+    // set values
+    if (toField) incoming.set(toField.name || toField.uuid, body.To);
+    if (fromField) incoming.set(fromField.name || fromField.uuid, body.From);
+    if (typeField) incoming.set(typeField.name || typeField.uuid, 'sms:inbound');
+    if (itemField) incoming.set(itemField.name || itemField.uuid, contacts.map((c) => c.get('_id')));
+    if (bodyField) incoming.set(bodyField.name || bodyField.uuid, `${body.Body}`);
+    if (dateField) incoming.set(dateField.name || dateField.uuid, new Date());
+    if (titleField) incoming.set(titleField.name || titleField.uuid, `SMS From ${body.From} to ${body.To}`);
 
     // save
     await incoming.save({
@@ -515,6 +714,7 @@ export default class PhonePage extends Struct {
    * @param body 
    */
   async callIncomingAction(opts, body) {
+    console.log(opts, body);
     // domain
     const domain = this.dashup.config.url.includes('.dev') ? 'dashup.dev' : 'dashup.io';
 
@@ -590,7 +790,7 @@ export default class PhonePage extends Struct {
     const typeField = (form.get('data.fields') || []).find((f) => f.uuid === page.get('data.event.type'));
     const itemField = (form.get('data.fields') || []).find((f) => f.uuid === page.get('data.event.item'));
     const bodyField = (form.get('data.fields') || []).find((f) => f.uuid === page.get('data.event.body'));
-    const timeField = (form.get('data.fields') || []).find((f) => f.uuid === page.get('data.event.time'));
+    const dateField = (form.get('data.fields') || []).find((f) => f.uuid === page.get('data.event.date'));
     const titleField = (form.get('data.fields') || []).find((f) => f.uuid === page.get('data.event.title'));
 
     // log number
@@ -600,15 +800,16 @@ export default class PhonePage extends Struct {
         page  : page.get('_id'),
         model : page.get('data.event.model'),
       },
-
-      [toField.name || toField.uuid]       : body.To,
-      [fromField.name || fromField.uuid]   : body.From,
-      [typeField.name || typeField.uuid]   : 'call:inbound',
-      [itemField.name || itemField.uuid]   : contacts.map((c) => c.get('_id')),
-      [bodyField.name || bodyField.uuid]   : `Received call from ${body.From} to ${body.To}`,
-      [timeField.name || timeField.uuid]   : new Date(),
-      [titleField.name || titleField.uuid] : `Call From ${body.From} to ${body.To}`,
     }, 'model');
+
+    // set values
+    if (toField) incoming.set(toField.name || toField.uuid, body.To);
+    if (fromField) incoming.set(fromField.name || fromField.uuid, body.From);
+    if (typeField) incoming.set(typeField.name || typeField.uuid, 'call:inbound');
+    if (itemField) incoming.set(itemField.name || itemField.uuid, contacts.map((c) => c.get('_id')));
+    if (bodyField) incoming.set(bodyField.name || bodyField.uuid, `Received call from ${body.From} to ${body.To}`);
+    if (dateField) incoming.set(dateField.name || dateField.uuid, new Date());
+    if (titleField) incoming.set(titleField.name || titleField.uuid, `Call From ${body.From} to ${body.To}`);
 
     // save
     await incoming.save({
@@ -639,7 +840,7 @@ export default class PhonePage extends Struct {
   trim="do-not-trim"
   recordingStatusCallback="https://${domain}/api/call/recording/${encodeURIComponent(body.From)}/${encodeURIComponent(body.To)}/${encodeURIComponent(event)}/incoming"
   recordingStatusCallbackEvent="completed">
-    <Client>${member.get('user.id')}</Client>
+    <Client>${member.get('user.id') || member.get('user')}</Client>
   </Dial>
 </Response>`;
     }

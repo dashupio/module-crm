@@ -16,6 +16,9 @@ class PhoneModule extends EventEmitter {
     // connections
     this.connections = new Map();
 
+    // bind init
+    this.init = this.init.bind(this);
+
     // status interval
     this.__status = setInterval(() => {
       // connection values
@@ -75,37 +78,52 @@ class PhoneModule extends EventEmitter {
     });
 
     // setup
-    conn.device.on('incoming', async (conn) => {
+    conn.device.on('incoming', async (connection) => {
       // get fields
       const fields = this.getFields(props);
 
       // set query
       const query = this.getQuery(props);
+
+      // connection
+      const conn = this.connections.get(props.page.get('_id'));
     
       // get number
       const numberField = fields.find((f) => f.uuid === props.page.get('data.field.phone'));
 
       // find or create number
       const item = await query.where({
-        [`${numberField.name || numberField.uuid}.number`] : conn.parameters.From,
+        [`${numberField.name || numberField.uuid}.number`] : connection.parameters.From,
       }).findOne() || await props.dashup.page(props.page.get('data.model')).create({
-        [`${numberField.name || numberField.uuid}.number`] : conn.parameters.From,
+        [`${numberField.name || numberField.uuid}.number`] : connection.parameters.From,
       });
 
       // emit connection
       conn.call = {
-        to     : conn.parameters.From,
-        from   : conn.parameters.To,
+        to     : connection.parameters.From,
+        from   : connection.parameters.To,
         type   : 'inbound',
         start  : new Date(),
         muted  : false,
         status : 'calling',
       };
       conn.item = item;
-      conn.conn = conn;
+      conn.conn = connection;
+
+      // on disconnect
+      conn.conn.on('reject', () => this.onDisconnect(props, item));
+      conn.conn.on('disconnect', () => this.onDisconnect(props, item));
+  
+      // on disconnect
+      conn.conn.on('mute', (muted) => {
+        // set muted
+        conn.call.muted = muted;
+        this.emit('update');
+      });
     
       // emit update
       this.emit('update');
+      this.emit('inbound', conn);
     });
 
     // return connection
@@ -142,11 +160,8 @@ class PhoneModule extends EventEmitter {
 
     // get fields
     const fields = this.getFields(props);
-    const eventFields = this.getFields(props, [page.get('data.event.form')]);
     
     // get fields
-    const userField = fields.find((f) => f.uuid === page.get('data.user.0'));
-    const dateField = eventFields.find((f) => f.uuid === page.get('data.event.date'));
     const numberField = fields.find((f) => f.uuid === page.get('data.field.phone'));
 
     // connection
@@ -212,11 +227,48 @@ class PhoneModule extends EventEmitter {
     });
 
     // on disconnect
-    conn.conn.on('disconnect', async () => {
-      // unset call
-      conn.call = null;
-      conn.conn = null;
+    conn.conn.on('disconnect', () => this.onDisconnect(props, item));
 
+    // on disconnect
+    conn.conn.on('mute', (muted) => {
+      // set muted
+      conn.call.muted = muted;
+      this.emit('update');
+    });
+
+    // return conn
+    return conn;
+  }
+
+  /**
+   * on disconnect
+   *
+   * @param conn 
+   * @param item 
+   */
+  async onDisconnect(props, item) {
+    // props
+    const { page, dashup } = props;
+
+    console.log(page, props, 'disconnect');
+
+    // connection
+    const conn = this.connections.get(page.get('_id'));
+
+    // get fields
+    const fields = this.getFields(props);
+    const eventFields = this.getFields(props, [page.get('data.event.form')]);
+
+    // user field
+    const userField = fields.find((f) => f.uuid === page.get('data.user.0'));
+    const dateField = eventFields.find((f) => f.uuid === page.get('data.event.date'));
+
+    // unset call
+    conn.call = null;
+    conn.conn = null;
+
+    // check event
+    if (conn.event) {
       // duration
       const duration = (new Date().getTime() - new Date(conn.event.get(`_meta.created_at`)).getTime());
 
@@ -230,29 +282,19 @@ class PhoneModule extends EventEmitter {
         // auto assign
         item.set(userField.name || userField.uuid, dashup.get('_meta.member'));
       }
+    }
 
-      // save item
-      await item.save();
+    // save item
+    await item.save();
 
-      // check status
-      if (conn.dialler) conn.dialler.status = 'paused';
+    // check status
+    if (conn.dialler) conn.dialler.status = 'paused';
 
-      // emit
-      this.emit('modal');
+    // emit
+    this.emit('modal');
 
-      // emit update
-      this.emit('update');
-    });
-
-    // on disconnect
-    conn.conn.on('mute', (muted) => {
-      // set muted
-      conn.call.muted = muted;
-      this.emit('update');
-    });
-
-    // return conn
-    return conn;
+    // emit update
+    this.emit('update');
   }
 
   /**
@@ -753,22 +795,4 @@ const phoneModule = eden.phone || new PhoneModule();
 eden.phone = phoneModule;
 
 // Create mixin
-export default (toMix) => {
-  // set dashup
-  if (!toMix.phone) toMix.phone = phoneModule;
-
-  // create safe update
-  toMix.safeUpdate = () => {
-    // update
-    toMix.update();
-  };
-
-  // update
-  phoneModule.on('update', toMix.safeUpdate);
-
-  // init to module
-  phoneModule.init(toMix).then((connection) => {
-    // set connection
-    toMix.connection = connection;
-  });
-};
+export default phoneModule;

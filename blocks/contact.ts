@@ -45,7 +45,7 @@ export default class ContactBlock extends Struct {
   get views() {
     // return object of views
     return {
-      view   : 'block/contact/view',
+      view   : 'block/contact',
       config : 'block/contact/config',
     };
   }

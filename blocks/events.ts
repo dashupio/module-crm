@@ -45,7 +45,7 @@ export default class EventsBlock extends Struct {
   get views() {
     // return object of views
     return {
-      view   : 'block/events/view',
+      view   : 'block/events',
       config : 'block/events/config',
     };
   }
