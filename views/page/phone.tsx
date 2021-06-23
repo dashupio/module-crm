@@ -315,7 +315,6 @@ const PhonePage = (props = {}) => {
           </button>
         ) }
       </Page.Menu>
-      SUB MENU
       <Page.Body>
         <div className="flex-1 fit-content">
           <Measure bounds onResize={ ({ bounds }) => setWidth(parseInt(bounds.width, 10)) }>

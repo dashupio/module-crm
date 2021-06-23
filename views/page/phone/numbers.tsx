@@ -1,7 +1,7 @@
 
 // import react
-import Select from 'react-select';
 import countries from 'country-list';
+import { Select } from '@dashup/ui';
 import React, { useState } from 'react';
 
 // create page model config

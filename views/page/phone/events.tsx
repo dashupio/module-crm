@@ -1,8 +1,7 @@
 
 // import react
 import React from 'react';
-import Select from 'react-select';
-import { View, Query } from '@dashup/ui';
+import { Select } from '@dashup/ui';
 
 // create page model config
 const PagePhoneEvents = (props = {}) => {
