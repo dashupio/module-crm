@@ -3,3 +3,7 @@
 @import '../../node_modules/react-resizable/css/styles';
 @import '../../node_modules/react-grid-layout/css/styles';
 
+.react-grid-item > .react-resizable-handle.react-resizable-handle-se {
+  z-index : 10;
+}
+

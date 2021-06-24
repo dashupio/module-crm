@@ -299,7 +299,7 @@ const PhonePage = (props = {}) => {
 
       <Page.Config show={ config } onHide={ (e) => setConfig(false) } />
 
-      <Page.Menu onConfig={ () => setConfig(true) } onShare>
+      <Page.Menu onConfig={ () => setConfig(true) } presence={ props.presence }>
         <Menu updating={ updating } phone={ phone } numbers={ numbers } connection={ connection } { ...props } />
 
         { updating && props.dashup.can(props.page, 'manage') && (
