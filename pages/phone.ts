@@ -309,11 +309,9 @@ export default class PhonePage extends Struct {
     return {
       view       : 'page/phone',
       menu       : 'page/phone/menu',
-      filter     : 'page/phone/filter',
       events     : 'page/phone/events',
       numbers    : 'page/phone/numbers',
       contacts   : 'page/phone/contacts',
-      connects   : 'page/phone/connects',
       forwarding : 'page/phone/forwarding',
     };
   }

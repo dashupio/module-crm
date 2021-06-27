@@ -1,12 +1,18 @@
 
 // import react
 import { Dropdown } from 'react-bootstrap';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 // application page
 const PhonePageMenu = (props = { numbers : [] }) => {
+  // numbers
+  const [numbers, setNumbers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [updated, setUpdated] = useState(new Date());
+  const [connection, setConnection] = useState(null);
+
   // break out props
-  const { phone, numbers, connection } = props;
+  const { phone } = props;
 
   // variables
   const status = {
@@ -179,30 +185,77 @@ const PhonePageMenu = (props = { numbers : [] }) => {
     // pause dialler
     phone.finish(props);
   };
+  
+  // load numbers
+  const loadNumbers = async () => {
+    // load numbers
+    const availableNumbers = await props.page.action('list') || [];
+
+    // set numbers
+    setNumbers(availableNumbers);
+
+    // numbers
+    if (availableNumbers.length === 1) {
+      // default
+      phone.number(props, (availableNumbers[0].number || {}).number);
+    }
+  };
+
+  // use effect
+  useEffect(() => {
+    // set loading
+    setLoading(false);
+
+    // on connection
+    const onConnection = () => {
+      // set updated
+      setUpdated(new Date());
+    };
+
+    // build
+    phone.init({ props }).then((conn) => {
+      // set actual connection
+      setConnection(conn);
+
+      // load numbers
+      loadNumbers();
+    });
+
+    // on update
+    phone.on('update', onConnection);
+
+    // unlisten
+    return () => {
+      phone.removeListener('update', onConnection);
+    };
+  }, [props.page.get('_id')]);
 
   // return jsx
   return props.updating ? <div /> : (
     <>
       { !!(connection?.number && !connection?.call) && (
-        <button className="btn btn-link me-2" data-toggle="tooltip" title="Calling Number">
+        <button className="btn btn-link me-2">
           { connection.number }
         </button>
       ) }
 
       { /* SELECT NUMBER */ }
       { !!(numbers && numbers.length > 1 && !connection?.call) && (
-        <div className="d-inline dropdown me-2" data-toggle="tooltip" title="Calling Number">
-          <button className={ `btn btn-${connection && connection.number ? 'light' : 'info'}` } id="dropdown-number" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        <Dropdown className="d-inline-block me-2">
+          <Dropdown.Toggle variant={ connection && connection.number ? 'light' : 'info' }>
             { connection && connection.number || 'Select Number' }
-          </button>
-          <div className="dropdown-menu" aria-labelledby="dropdown-number">
+          </Dropdown.Toggle>
+          <Dropdown.Menu>
             { numbers.map((item, i) => {
-              <button key={ `number-${item.number.number}` } className="dropdown-item" onClick={ (e) => onNumber(e, item.number) }>
-                { item.number.number }
-              </button>
+              // return value
+              return (
+                <Dropdown.Item key={ `number-${item.number.number}` } onClick={ (e) => onNumber(e, item.number) }>
+                  { item.number.number }
+                </Dropdown.Item>
+              );
             }) }
-          </div>
-        </div>
+          </Dropdown.Menu>
+        </Dropdown>
       ) }
 
       { /* CONNECTION STATUS */ }
@@ -304,25 +357,32 @@ const PhonePageMenu = (props = { numbers : [] }) => {
       ) }
 
       { props.dashup.can(props.page, 'submit') && !!props.getForms().length && (
-        <Dropdown>
-          <Dropdown.Toggle variant="primary" id="dropdown-create" className="me-2">
-            <i className="fat fa-plus me-2" />
-            Create
-          </Dropdown.Toggle>
+        props.getForms().length > 1 ? (
+          <Dropdown>
+            <Dropdown.Toggle variant="primary" id="dropdown-create" className="me-2">
+              <i className="fat fa-plus me-2" />
+              Create
+            </Dropdown.Toggle>
 
-          <Dropdown.Menu>
-            { props.getForms().map((form) => {
+            <Dropdown.Menu>
+              { props.getForms().map((form) => {
 
-              // return jsx
-              return (
-                <Dropdown.Item key={ `create-${form.get('_id')}` } onClick={ (e) => props.setData('limit', 25) }>
-                  <i className={ `me-2 fa-${form.get('icon') || 'pencil fas'}` } />
-                  { form.get('name') }
-                </Dropdown.Item>
-              );
-            }) }
-          </Dropdown.Menu>
-        </Dropdown>
+                // return jsx
+                return (
+                  <Dropdown.Item key={ `create-${form.get('_id')}` } onClick={ (e) => !props.setForm(form.get('_id')) && props.setItem(new props.dashup.Model({}, props.dashup)) }>
+                    <i className={ `me-2 fa-${form.get('icon') || 'pencil fas'}` } />
+                    { form.get('name') }
+                  </Dropdown.Item>
+                );
+              }) }
+            </Dropdown.Menu>
+          </Dropdown>
+        ) : (
+          <button className="btn btn-primary me-2" onClick={ (e) => !props.setForm(props.getForms()[0].get('_id')) && props.setItem(new props.dashup.Model({}, props.dashup)) }>
+            <i className={ `me-2 fa-${props.getForms()[0].get('icon') || 'pencil fas'}` } />
+            { props.getForms()[0].get('name') }
+          </button>
+        )
       ) }
       
       { !!(connection && connection.call) && (

@@ -1,13 +1,19 @@
 
 // import react
 import moment from 'moment';
+import colors from '../colors';
 import dotProp from 'dot-prop';
-import React, { useState, useEffect } from 'react';
+import WaveSurfer from 'wavesurfer.js';
+import React, { useRef, useState, useEffect } from 'react';
 
 // block events
 const BlockEventsItem = (props = {}) => {
   // use state
+  const [ws, setWs] = useState(null);
   const [playing, setPlaying] = useState(false);
+
+  // use ref
+  const waveForm = useRef(null);
 
   // types
   const types = {
@@ -82,7 +88,7 @@ const BlockEventsItem = (props = {}) => {
   };
 
   // get types
-  const getTagTypes = () => {
+  const getTagFields = () => {
     // get model
     const forms  = props.getForms([props.model]);
     const fields = props.getFields(forms);
@@ -100,8 +106,14 @@ const BlockEventsItem = (props = {}) => {
 
   // get color
   const getColor = () => {
+    // color tag
+    const colorTag = hasTags() && getTags(getTagFields().find((t) => getTags(t).length))[0];
+
     // get color
-    return getTags(getTagTypes()[0])[0]?.color;
+    return colorTag?.color ? {
+      color      : colorTag.color?.hex && colorTag.color?.drk ? '#fff' : '#000',
+      background : colors[colorTag.color] || colorTag.color?.hex || colorTag.color,
+    } : null;
   };
 
   // has tags
@@ -110,11 +122,46 @@ const BlockEventsItem = (props = {}) => {
     return (props.page.get('data.event.status') || []).length;
   };
 
+  // use effect
+  useEffect(() => {
+    // check recording
+    if (!dotProp.get(getValue('recording'), '0.url')) return;
+    
+    // create
+    const newWs = WaveSurfer.create({
+      height    : 24,
+      container : waveForm.current
+    });
+
+    // load
+    newWs.load(dotProp.get(getValue('recording'), '0.url').replace('storage.googleapis.com/', ''));
+
+    // set ws
+    setWs(newWs);
+  
+    // return done
+    return () => {
+      // remove
+      if (newWs) newWs.destroy();
+    };
+  }, [dotProp.get(getValue('recording'), '0.url')]);
+
+  // use effect
+  useEffect(() => {
+    // check ws
+    if (!ws) return;
+
+    console.log('SUP');
+
+    // set playing
+    ws[playing ? 'play' : 'pause']();
+  }, [!!ws, playing]);
+
   // return jsx
   return !!props.item && !!types[getValue('type')] ? (
-    <div className={ `card card-sm card-task card-${getColor()}` }>
+    <div className={ `card card-sm card-task${getColor() ? ' has-color' : ''}` }>
       { !!getColor() && (
-        <div className="color-strip" />
+        <div className="color-strip" style={ getColor() } />
       ) }
 
       <div className="card-body d-flex align-items-center">
@@ -123,7 +170,7 @@ const BlockEventsItem = (props = {}) => {
         </button>
 
         { !!dotProp.get(getValue('user'), '0.avatar.0.thumbs.sm-sq.url') && (
-          <img className="img-avatar rounded-circle mr-3" src={ dotProp.get(getValue('user'), '0.avatar.0.thumbs.sm-sq.url') } />
+          <img className="img-avatar rounded-circle me-3" src={ dotProp.get(getValue('user'), '0.avatar.0.thumbs.sm-sq.url') } />
         ) }
 
         <div>
@@ -152,14 +199,20 @@ const BlockEventsItem = (props = {}) => {
           ) }
           { hasTags() && (
             <div className="tags mt-2">
-              { getTagTypes().map((type, a) => {
+              { getTagFields().map((type, a) => {
                 // return
                 return (
                   <React.Fragment key={ `tag-${type}` }>
                     { getTags(type).map((tag, i) => {
+                      // hex
+                      const hex = colors[tag.color] || tag.color?.hex || tag.color;
+                      
                       // return jsx
                       return (
-                        <button key={ `tag-${type}-${tag.value}` } className={ `btn btn-sm mr-1 btn-${tag.color}` }>
+                        <button className={ `btn btn-sm${colors[tag.color] ? ` btn-${tag.color}` : ''} me-1` } style={ {
+                          color      : tag.color?.hex ? (tag.color?.drk ? '#fff' : '#000') : null,
+                          background : hex ? `${hex}cc` : null,
+                        } }>
                           { tag.label }
                         </button>
                       );
@@ -175,7 +228,7 @@ const BlockEventsItem = (props = {}) => {
           <div className="ms-auto d-flex flex-row">
             <div className="align-items-center me-3">
               <div className="btn-group">
-                <button className="btn btn-primary" onclick={ (e) => onTogglePlay(e) }>
+                <button className="btn btn-primary" onClick={ (e) => setPlaying(!playing) }>
                   <i className={ `fa fa-${playing ? 'pause' : 'play'}` } />
                 </button>
                 <a className="btn btn-primary" download={ `${props.item.get('_id')}` } target="_BLANK" href={ dotProp.get(getValue('recording'), '0.url') }>
@@ -183,8 +236,10 @@ const BlockEventsItem = (props = {}) => {
                 </a>
               </div>
             </div>
-            TODO
-            WAVESURFER
+            <div ref={ waveForm } style={ {
+              width  : '12rem',
+              height : '2rem',
+            } } />
           </div>
         ) }
       </div>

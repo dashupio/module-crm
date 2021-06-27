@@ -667,7 +667,7 @@ class PhoneModule extends EventEmitter {
     // return fields
     return Array.from(props.dashup.get('pages').values()).filter((page) => {
       // return model pages
-      return page.get('type') === 'form' && forms.includes(page.get('_id'));
+      return page.get('type') === 'form' && forms.includes(page.get('_id')) && !page.get('archived');
     }).reduce((accum, page) => {
       // fields
       accum.push(...(page.get('data.fields') || []));

@@ -4,7 +4,7 @@ import React from 'react';
 import { Select } from '@dashup/ui';
 
 // create page model config
-const PagePhoneEvents = (props = {}) => {
+const PageBulkEvents = (props = {}) => {
 
   // fields
   const fields = [
@@ -155,7 +155,7 @@ const PagePhoneEvents = (props = {}) => {
       { !!props.page.get('data.event.model') && (
         <div className="mb-3">
           <label className="form-label">
-            Event Form(s)
+          Event Form(s)
           </label>
           <Select options={ getForm() } defaultValue={ getForm().filter((f) => f.selected) } onChange={ onForm } />
         </div>
@@ -188,4 +188,4 @@ const PagePhoneEvents = (props = {}) => {
 };
 
 // export default
-export default PagePhoneEvents;
+export default PageBulkEvents;

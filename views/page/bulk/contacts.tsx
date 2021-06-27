@@ -4,7 +4,7 @@ import React from 'react';
 import { View, Query, Select } from '@dashup/ui';
 
 // create page model config
-const PagePhoneContacts = (props = {}) => {
+const PageBulkContacts = (props = {}) => {
 
   // fields
   const fields = [
@@ -137,23 +137,12 @@ const PagePhoneContacts = (props = {}) => {
       </div>
       
       { !!props.page.get('data.model') && (
-        <>
-          <div className="mb-3">
-            <label className="form-label">
-              Contact Form(s)
-            </label>
-            <Select options={ getForms() } defaultValue={ getForms().filter((f) => f.selected) } onChange={ onForms } isMulti />
-          </div>
-          <div className="mb-3">
-            <label className="form-label">
-              End Call Form
-            </label>
-            <Select options={ getModals() } defaultValue={ getModals().filter((f) => f.selected) } onChange={ onModal } />
-            <small className="form-help">
-              Form to display at the end of a call.
-            </small>
-          </div>
-        </>
+        <div className="mb-3">
+          <label className="form-label">
+            Contact Form(s)
+          </label>
+          <Select options={ getForms() } defaultValue={ getForms().filter((f) => f.selected) } onChange={ onForms } isMulti />
+        </div>
       ) }
 
       { !!props.page.get('data.model') && (
@@ -226,4 +215,4 @@ const PagePhoneContacts = (props = {}) => {
 };
 
 // export default
-export default PagePhoneContacts;
+export default PageBulkContacts;

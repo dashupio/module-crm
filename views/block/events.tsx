@@ -39,22 +39,57 @@ const BlockEvents = (props = {}) => {
 
   // load data
   const loadData = async () => {
-    // get model page
-    const model = getModel();
-
-    // check model page
-    if (!model) return null;
-
-    // get model page
-    const modelPage = props.dashup.page(model);
-
     // get query
-    const query = props.getQuery(modelPage);
+    const getQuery = () => {
+      // check item
+      if (!props.item || !props.item.get('_id')) return;
+
+      // get model page
+      const model = getModel();
+
+      // check model page
+      if (!model) return;
+
+      // get model page
+      const modelPage = props.dashup.page(model);
+
+      // check model page
+      if (!modelPage) return;
+
+      // get field
+      const eventId = props.block.field || props.page.get('data.event.item');
+
+      // check model page
+      if (!eventId) return;
+
+      // get forms
+      const formPages = props.getForms([modelPage]);
+      
+      // get fields
+      const fields = props.getFields(formPages);
+
+      // check fields
+      if (!fields.length) return;
+
+      // event field
+      const eventField = fields.find((f) => f.uuid === eventId);
+
+      // check fields
+      if (!eventField) return;
+
+      // get query
+      return modelPage.where({
+        [eventField.name || eventField.uuid] : props.item.get('_id'),
+      });
+    }
+
+    // return nothing
+    if (!getQuery()) return {};
     
     // list
     return {
-      data  : await query.skip(skip).limit(limit).listen(),
-      total : await props.getQuery(modelPage).count(),
+      data  : await getQuery().skip(skip).limit(limit).listen(),
+      total : await getQuery().count(),
     };
   };
 
@@ -72,10 +107,16 @@ const BlockEvents = (props = {}) => {
     // set loading
     setLoading(true);
 
+    // listening
+    let listening = null;
+
     // load data
-    loadData().then(({ data, total }) => {
+    loadData().then(({ data = [], total = 0 }) => {
       // on update
-      data.on('update', onUpdate);
+      if (data?.on) data.on('update', onUpdate);
+
+      // set listening
+      listening = data;
 
       // set data
       setItems(data);
@@ -85,13 +126,13 @@ const BlockEvents = (props = {}) => {
     // return nothing
     return () => {
       // items
-      if (!items.removeListener) return;
+      if (!listening.removeListener) return;
 
       // remove listener
-      items.deafen();
-      items.removeListener('update', onUpdate);
+      listening.deafen();
+      listening.removeListener('update', onUpdate);
     };
-  }, [props.block.model, props.model, skip, limit]);
+  }, [getModel(), props.item && props.item.get('_id'), skip, limit]);
 
   // return jsx
   return (
@@ -107,7 +148,7 @@ const BlockEvents = (props = {}) => {
           <div className="text-center">
             <i className="fa fa-spinner fa-spin" />
           </div>
-        ) : items.map((item, i) => {
+        ) : (items || []).map((item, i) => {
           // return jsx
           return (
             <Item key={ `event-${item.get('_id')}` } item={ item } model={ getModel() } { ...getProps() } />

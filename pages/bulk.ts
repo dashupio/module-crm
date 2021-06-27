@@ -56,12 +56,9 @@ export default class BulkPage extends Struct {
   get views() {
     // return object of views
     return {
-      view     : 'page/bulk/view',
-      menu     : 'page/bulk/menu',
-      filter   : 'page/bulk/filter',
+      view     : 'page/bulk',
       events   : 'page/bulk/events',
       contacts : 'page/bulk/contacts',
-      connects : 'page/bulk/connects',
     };
   }
 

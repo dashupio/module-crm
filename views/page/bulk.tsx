@@ -1,14 +1,10 @@
 
 import shortid from 'shortid';
 import { View, Page } from '@dashup/ui';
-import React, { useState, useEffect } from 'react';
-
-// import local
-import Menu from './phone/menu';
-import phone from './phone.ts';
+import React, { useState } from 'react';
 
 // application page
-const PhonePage = (props = {}) => {
+const BulkPage = (props = {}) => {
   // groups
   const [form, setForm] = useState(null);
   const [updating, setUpdating] = useState(null);
@@ -26,55 +22,52 @@ const PhonePage = (props = {}) => {
   const defaultBlocks = [
     {
       uuid  : shortid(),
-      type  : 'card',
+      type  : 'grid',
       _grid : {
-        x : 6,
-        y : 0,
-        w : 3,
-        h : 8,
-      },
-    },
-    {
-      uuid  : shortid(),
-      type  : 'form',
-      _grid : {
-        x : 2,
-        y : 0,
-        w : 4,
-        h : 30,
-      },
-    },
-    {
-      uuid  : shortid(),
-      type  : 'events',
-      _grid : {
-        x : 6,
-        y : 2,
+        x : 0,
+        y : 1,
         w : 6,
-        h : 22,
-      },
-      background : true,
-    },
-    {
-      uuid  : shortid(),
-      type  : 'contact',
-      _grid : {
-        x : 9,
-        y : 0,
-        w : 3,
-        h : 8,
+        h : 24,
       },
     },
     {
-      uuid  : shortid(),
-      type  : 'list',
+      uuid    : shortid(),
+      type    : 'chart',
+      color   : 'success',
+      model   : props.page.get('data.event.model') || null,
+      metric  : 'sum',
+      display : '{{ value }} Opens',
       _grid : {
         x : 0,
         y : 0,
-        w : 2,
-        h : 30,
+        w : 3,
+        h : 6
       },
-      background : true,
+    },
+    {
+      uuid    : shortid(),
+      type    : 'chart',
+      color   : 'primary',
+      model   : props.page.get('data.event.model') || null,
+      metric  : 'count',
+      filter  : '[{"type":{"$eq":"email:outbound"}}]',
+      display : '{{ value }} Sent',
+      _grid : {
+        x : 3,
+        y : 0,
+        w : 3,
+        h : 6
+      },
+    },
+    {
+      uuid : shortid(),
+      type : 'bulk',
+      _grid : {
+        x : 6,
+        y : 0,
+        w : 6,
+        h : 30
+      },
     },
   ];
 
@@ -176,10 +169,6 @@ const PhonePage = (props = {}) => {
       onItem={ (item) => setItem(item, true) }
       require={ required }
       onClick={ setItem }
-
-      menu={ ({ updating }) => (
-        <Menu updating={ updating } phone={ phone } setForm={ setForm } { ...props } />
-      ) }
       subMenu={ () => (
         <>
           <Page.Filter onSearch={ setSearch } onTag={ setTag } onSort={ setSort } onFilter={ setFilter } isString />
@@ -191,4 +180,4 @@ const PhonePage = (props = {}) => {
 };
 
 // export default
-export default PhonePage;
+export default BulkPage;
