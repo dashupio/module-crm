@@ -183,7 +183,7 @@ const PhonePage = (props = {}) => {
       subMenu={ () => (
         <>
           <Page.Filter onSearch={ setSearch } onTag={ setTag } onSort={ setSort } onFilter={ setFilter } isString />
-          { !!props.item && !!updating && <Page.Item show item={ props.item } form={ form } setItem={ props.setItem } onHide={ (e) => !setUpdating(false) && props.setItem(null) } /> }
+          { !!props.item && !!updating && <Page.Item show item={ props.item } form={ form } setItem={ props.setItem } onHide={ (e) => setUpdating(false) } /> }
         </>
       ) }
       />

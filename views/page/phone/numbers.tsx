@@ -1,19 +1,30 @@
 
 // import react
+import Dashup from '@dashup/core';
 import countries from 'country-list';
-import { Select } from '@dashup/ui';
-import React, { useState } from 'react';
+import { View, Select } from '@dashup/ui';
+import React, { useState, useEffect } from 'react';
 
 // create page model config
 const PagePhoneNumbers = (props = {}) => {
   // set state
-  const [tab, setTab] = useState('buy');
+  const [tab, setTab] = useState('list');
+  const [guest, setGuest] = useState(null);
   const [error, setError] = useState(null);
   const [order, setOrder] = useState(null);
   const [number, setNumber] = useState(null);
   const [country, setCountry] = useState(null);
   const [numbers, setNumbers] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  // is dark
+  const isDark = () => {
+    // settings
+    if (window.matchMedia('(prefers-color-scheme: dark)').matches && !(document.body.getAttribute('class') || '').includes('light')) return true;
+
+    // no dark
+    return false;
+  };
       
   // get countries
   const getCountries = () => {
@@ -32,7 +43,6 @@ const PagePhoneNumbers = (props = {}) => {
    * load numbers
    */
   const loadNumbers = async (c) => {
-    console.log(c, numbers);
     // loading
     setLoading('numbers');
 
@@ -51,27 +61,86 @@ const PagePhoneNumbers = (props = {}) => {
     setNumbers([]);
     if (value?.value) loadNumbers(value?.value);
   };
+
+  // on purchase
+  const onPurchase = async (number) => {
+    // check guest
+    if (!guest) return;
+
+    // update
+    setTab('checkout');
+    setNumber(number);
+    setLoading('checkout');
+
+    // load plan
+    const actualNumber = await eden.guest.page('5fa8d64fce9ecf0d7bfa4327').where({
+      sku : 'number',
+    }).findOne();
+
+    // add
+    await eden.guest.page('5fa8f18e5cc2fcc84ff61ebb').clear();
+    await eden.guest.page('5fa8f18e5cc2fcc84ff61ebb').add(actualNumber, 1, {
+      page   : props.page.get('_id'),
+      dashup : props.dashup.get('_id'),
+      number : number,
+    });
+
+    // building
+    setLoading(false);
+  };
+
+  // on success
+  const onSuccess = async (order) => {
+    // load order
+    setLoading('order');
+    setOrder(order);
+    setTab('order');
+    
+    // set tab
+    const data = await props.page.action('purchase', order.get('_id'));
+
+    // error
+    if (!data.success) {
+      // update
+      setTab('checkout');
+      setError(data.message);
+
+      // false
+      return setLoading(false);
+    }
+
+    // loop data
+    Object.keys(data.result).forEach((key) => {
+      // set value
+      order.set(key, data.result[key]);
+    });
+
+    // update
+    setLoading(false);
+    
+    // emit
+    props.page.emit('numbers', true);
+  };
+
+  // use effect
+  useEffect(() => {
+    // load guest dashup
+    if (eden.state.guest && !eden.guest) {
+      // set guest dashup
+      eden.guest = new Dashup(eden.state.guest);
+    }
+
+    // check guest
+    if (!eden.guest) return;
+
+    // await building
+    eden.guest.building.then(() => setGuest(eden.guest));
+  }, [eden.state.guest?.key]);
   
   // return jsx
   return (
     <>
-      { tab === 'purchase' && (
-        <div>
-          <p className="lead my-5 text-center">
-            Purchasing <b>{ number.friendlyName }</b>
-          </p>
-          <div id="checkout" />
-        </div>
-      ) }
-      { tab === 'number' && (
-        <div>
-          <p className="lead my-5 text-center">
-            <b>{ order.get('number') }</b>
-          </p>
-          <div id="order" />
-        </div>
-      ) }
-      { tab === 'buy' && (
+      { tab === 'list' && (
         <>
           { !!error && (
             <div className="alert alert-danger mb-3">
@@ -127,7 +196,7 @@ const PagePhoneNumbers = (props = {}) => {
                       ) }
                     </div>
 
-                    <button className="btn ms-3 me-0 btn-success" onClick={ (e) => onPurchase(e, number) }>
+                    <button className="btn ms-3 me-0 btn-success" onClick={ (e) => onPurchase(number) }>
                       <i className="fa fa-shopping-cart me-2" />
                       $9.99 /m
                     </button>
@@ -138,6 +207,59 @@ const PagePhoneNumbers = (props = {}) => {
             
           ) }
         </>
+      ) }
+      { tab === 'order' && (
+        loading ? (
+          <div className="my-4 text-center">
+            <i className="h1 fa fa-spinner fa-spin" />
+          </div>
+        ) : (
+          <View
+            type="page"
+            view="order"
+            struct="checkout"
+
+            page={ guest.page('5f93c54d267be3000f6fe19e') }
+            logo={ `/public/assets/images/logo-${isDark() ? 'white' : 'color'}.svg` }
+            order={ order.get('_id') }
+            dashup={ guest }
+            classes={ {
+              orderMain    : 'col-12 mt-5',
+              orderSidebar : 'd-none',
+            } }
+          />
+        )
+      ) }
+      { tab === 'checkout' && (
+        loading === 'checkout' ? (
+          <div className="my-4 text-center">
+            <i className="h1 fa fa-spinner fa-spin" />
+          </div>
+        ) : (
+          <View
+            type="page"
+            view="checkout"
+            struct="checkout"
+  
+            page={ guest.page('5fa8f18e5cc2fcc84ff61ebb') }
+            logo={ `/public/assets/images/logo-${isDark() ? 'white' : 'color'}.svg` }
+            back={ `/app/${props.page.get('_id')}` }
+            email={ eden.user.get('email') }
+            dashup={ guest }
+  
+            onSuccess={ onSuccess }
+  
+            classes={ {
+              checkoutLogo            : 'd-none',
+              checkoutMain            : 'dashup-checkout-main col-12 order-1 mt-5',
+              checkoutSteps           : 'd-none',
+              checkoutSidebar         : 'dashup-checkout-cart col-12',
+              checkoutCompleteBtn     : 'btn btn-primary ps-auto',
+              checkoutCompleteBack    : 'd-none',
+              checkoutCompleteBtnWrap : 'col-12 text-right',
+            } }
+          />
+        )
       ) }
     </>
   )
