@@ -52,7 +52,7 @@ const PagePhoneNumbers = (props = {}) => {
     // update
     setNumbers(loadedNumbers);
     setLoading(false);
-  }
+  };
 
   // on country
   const onCountry = (value) => {
@@ -220,7 +220,7 @@ const PagePhoneNumbers = (props = {}) => {
             struct="checkout"
 
             page={ guest.page('5f93c54d267be3000f6fe19e') }
-            logo={ `/public/assets/images/logo-${isDark() ? 'white' : 'color'}.svg` }
+            logo={ `https://static.dashup.io/public/assets/images/logo-${isDark() ? 'white' : 'color'}.svg` }
             order={ order.get('_id') }
             dashup={ guest }
             classes={ {
@@ -242,7 +242,7 @@ const PagePhoneNumbers = (props = {}) => {
             struct="checkout"
   
             page={ guest.page('5fa8f18e5cc2fcc84ff61ebb') }
-            logo={ `/public/assets/images/logo-${isDark() ? 'white' : 'color'}.svg` }
+            logo={ `https://static.dashup.io/public/assets/images/logo-${isDark() ? 'white' : 'color'}.svg` }
             back={ `/app/${props.page.get('_id')}` }
             email={ eden.user.get('email') }
             dashup={ guest }

@@ -33,6 +33,18 @@ const PageBulkEvents = (props = {}) => {
       label : 'Phone From',
     },
     {
+      name  : 'email',
+      type  : 'email',
+      help  : 'Email to field',
+      label : 'Email To',
+    },
+    {
+      name  : 'emailFrom',
+      type  : 'email',
+      help  : 'Email from field',
+      label : 'Email From',
+    },
+    {
       name  : 'title',
       type  : 'text',
       help  : 'Text field for the event title',

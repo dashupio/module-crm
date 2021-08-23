@@ -230,6 +230,12 @@ const PhonePageMenu = (props = { numbers : [] }) => {
     };
   }, [props.page.get('_id')]);
 
+  // use effect
+  useEffect(() => {
+    // set item
+    phone.item(props, props.item && props.item.get('_id') ? props.item : null, true);
+  }, [props.item && props.item.get()]);
+
   // return jsx
   return props.updating ? <div /> : (
     <>
@@ -369,7 +375,7 @@ const PhonePageMenu = (props = { numbers : [] }) => {
 
                 // return jsx
                 return (
-                  <Dropdown.Item key={ `create-${form.get('_id')}` } onClick={ (e) => !props.setForm(form.get('_id')) && props.setItem(new props.dashup.Model({}, props.dashup)) }>
+                  <Dropdown.Item key={ `create-${form.get('_id')}` } onClick={ (e) => !props.setForm(form.get('_id')) && props.setItem(new props.dashup.Model({}, props.dashup), true) }>
                     <i className={ `me-2 fa-${form.get('icon') || 'pencil fas'}` } />
                     { form.get('name') }
                   </Dropdown.Item>
@@ -378,7 +384,7 @@ const PhonePageMenu = (props = { numbers : [] }) => {
             </Dropdown.Menu>
           </Dropdown>
         ) : (
-          <button className="btn btn-primary me-2" onClick={ (e) => !props.setForm(props.getForms()[0].get('_id')) && props.setItem(new props.dashup.Model({}, props.dashup)) }>
+          <button className="btn btn-primary me-2" onClick={ (e) => !props.setForm(props.getForms()[0].get('_id')) && props.setItem(new props.dashup.Model({}, props.dashup), true) }>
             <i className={ `me-2 fa-${props.getForms()[0].get('icon') || 'pencil fas'}` } />
             { props.getForms()[0].get('name') }
           </button>

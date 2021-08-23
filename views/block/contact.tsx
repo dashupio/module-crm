@@ -1,20 +1,47 @@
 
 // import react
 import dotProp from 'dot-prop';
-import { Tab, Tabs } from 'react-bootstrap';
-import React, { useRef, useState } from 'react';
+import { Chat } from '@dashup/ui';
+import SimpleBar from 'simplebar-react';
+import { OverlayTrigger, Tooltip, Button } from 'react-bootstrap';
+import React, { useRef, useState, useEffect } from 'react';
+
+// import item
+import Item from './event';
+
+// import contact
+import './contact.scss';
 
 // block events
 const BlockContact = (props = {}) => {
   // use state
-  const [tab, setTab] = useState('note');
+  const [tab, setTab] = useState('chat');
+  const [skip, setSkip] = useState(0);
+  const [items, setItems] = useState([]);
+  const [limit, setLimit] = useState(25);
+  const [subject, setSubject] = useState('');
+  const [updated, setUpdated] = useState(new Date());
   const [loading, setLoading] = useState(false);
 
-  // use ref
-  const sms     = useRef(null);
-  const note    = useRef(null);
-  const email   = useRef(null);
-  const subject = useRef(null);
+  // get model
+  const getModel = () => {
+    return props.block.model || (props.page ? props.page.get('data.event.model') : null);
+  };
+
+  // get props
+  const getProps = () => {
+    // new props
+    const newProps = { ...props };
+
+    // delete unwanted
+    delete newProps.view;
+    delete newProps.type;
+    delete newProps.model;
+    delete newProps.struct;
+
+    // return new props
+    return newProps;
+  };
 
   // get value
   const getValue = (name, tld = null) => {
@@ -28,7 +55,7 @@ const BlockContact = (props = {}) => {
     const { item } = props;
 
     // return field
-    const forms = props.getForms(model);
+    const forms = props.getForms([model]);
     const fields = props.getFields(forms);
 
     // get actual field
@@ -38,161 +65,235 @@ const BlockContact = (props = {}) => {
     return dotProp.get(item.toJSON(), `${field.name || field.uuid}${tld ? `.${tld}` : ''}`);
   };
 
+  // load data
+  const loadData = async () => {
+    // get query
+    const getQuery = () => {
+      // check item
+      if (!props.item || !props.item.get('_id')) return;
+
+      // get model page
+      const model = getModel();
+
+      // check model page
+      if (!model) return;
+
+      // get model page
+      const modelPage = props.dashup.page(model);
+
+      // check model page
+      if (!modelPage) return;
+
+      // get field
+      const eventId = props.block.field || props.page.get('data.event.item');
+
+      // check model page
+      if (!eventId) return;
+
+      // get forms
+      const formPages = props.getForms([modelPage]);
+      
+      // get fields
+      const fields = props.getFields(formPages);
+
+      // check fields
+      if (!fields.length) return;
+
+      // event field
+      const eventField = fields.find((f) => f.uuid === eventId);
+
+      // check fields
+      if (!eventField) return;
+
+      // get query
+      return modelPage.where({
+        [eventField.name || eventField.uuid] : props.item.get('_id'),
+      });
+    }
+
+    // return nothing
+    if (!getQuery()) return {};
+    
+    // list
+    return {
+      data  : await getQuery().skip(skip).limit(limit).listen(),
+      total : await getQuery().count(),
+    };
+  };
+
   // get email
   const getEmail = () => {
     // return email
     return (props.page.get('connects') || []).find((c) => c.email);
   };
-      
-  // on email
-  const onEmail = async (e) => {
+
+  // on send
+  const onSend = async (e, { message }) => {
     // prevent default
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
+    e.preventDefault();
+    e.stopPropagation();
+
+    // check type
+    if (tab === 'sms') {
+      // send sms out
+      return await props.sendSMS(message);
+    } else if (tab === 'email') {
+      // send email out
+      const rtn = await props.sendEmail(getEmail(), subject, message);
+
+      // set subject
+      setSubject('');
+
+      // return
+      return rtn;
     }
-
-    // get item
-    const { item } = props;
-
-    // check email
-    if (!item || !getValue('email')) return;
-
-    // check sms
-    const body    = email.current?.innerText;
-    const title   = subject.current?.value;
-    const connect = getEmail();
-
-    // loading
-    setLoading('email');
     
-    // submit form
-    await props.dashup.action({
-      type   : 'connect',
-      user   : props.me.get('_id'),
-      page   : props.page.get('_id'),
-      form   : props.page.get('data.event.form'),
-      model  : props.page.get('data.event.model'),
-      struct : connect.type,
-    }, 'send', connect, {
-      body,
-      to      : getValue('email'),
-      item    : item.get('_id'),
-      user    : props.dashup.get('_meta.member'),
-      subject : title, 
+    // create message
+    await props.addEvent({
+      body : message,
+      item : props.item,
+      type : tab,
+      time : new Date(),
+    });
+  };
+
+  // on update
+  const onUpdate = () => {
+    // set updated
+    setUpdated(new Date());
+  };
+
+  // use effect
+  useEffect(() => {
+    // check loading
+    if (loading) return;
+
+    // set loading
+    setLoading(true);
+
+    // listening
+    let listening = null;
+
+    // load data
+    loadData().then(({ data = [], total = 0 }) => {
+      // on update
+      if (data?.on) data.on('update', onUpdate);
+
+      // set listening
+      listening = data;
+
+      // set data
+      setItems(data);
+      setLoading(false);
     });
 
-    // loading
-    setLoading(false);
-  };
+    // return nothing
+    return () => {
+      // items
+      if (!listening.removeListener) return;
 
-  // on sms
-  const onSMS = async (e) => {
-    // prevent default
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-
-    // check sms
-    const body = sms.current?.value;
-
-    // reset value
-    if (sms.current) sms.current.value = '';
-
-    // loading
-    setLoading('sms');
-
-    // create call
-    await props.phone.sms(props, props.item, body);
-
-    // loading
-    setLoading(null);
-  };
-  
-  // on note
-  const onNote = async (e) => {
-    // prevent default
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-
-    // check sms
-    const body = note.current?.value;
-
-    // reset value
-    if (note.current) note.current.value = '';
-
-    // loading
-    setLoading('note');
-
-    // add event
-    await props.phone.event(props, {
-      body,
-      item  : props.item,
-      type  : 'note',
-      time  : new Date(),
-      title : 'Added Note',
-    });
-
-    // loading
-    setLoading(null);
-  };
+      // remove listener
+      listening.deafen();
+      listening.removeListener('update', onUpdate);
+    };
+  }, [getModel(), props.item && props.item.get('_id'), skip, limit]);
 
   // return jsx
   return (
     <div className={ `flex-1 d-flex flex-column h-100 w-100${props.block.background ? ' card' : ''}` }>
-      { !!props.block.label && (
+      { !!props.item && getValue('name') && (
         <div className={ props.block.background ? 'card-header' : ' mb-2' }>
-          <b>{ props.block.label }</b>
+          <b>{ getValue('name') }</b>
         </div>
       ) }
-      <div className={ props.block.background ? 'card-body' : 'd-flex flex-column' }>
-        <Tabs
-          id="contact-tabs"
-          onSelect={ setTab }
-          activeKey={ tab }
-          className="mb-3"
-          >
-          <Tab eventKey="note" title="Note">
-            <label className="form-label">
-              Note
-            </label>
-            <textarea ref={ note } className="form-control" type="text" />
-          </Tab>
-          <Tab eventKey="sms" title="SMS">
-            <label className="form-label">
-              SMS Message
-            </label>
-            <input ref={ sms } className="form-control" type="text" />
-          </Tab>
-          <Tab eventKey="email" title="Email" disabled={ !getEmail() }>
-            <label className="form-label">
-              Email
-            </label>
-            <input ref={ subject } className="form-control mb-3" placeholder="Subject" />
-            EDITOR
-          </Tab>
-        </Tabs>
+      
+      <div className="flex-1 fit-content">
+        <div className="h-100">
+          <SimpleBar className={ `p-relative h-100${props.block.background ? ' card-body' : ''}` }>
+            { loading ? (
+              <div className="text-center">
+                <i className="fa fa-spinner fa-spin" />
+              </div>
+            ) : (items || []).map((item, i) => {
+              // return jsx
+              return (
+                <Item
+                  { ...getProps() }
+                  key={ `event-${item.get('_id')}` }
+                  prev={ items[i - 1] }
+                  next={ items[i + 1] }
+                  event={ item }
+                  model={ getModel() }
+                />
+              );
+            }) }
+          </SimpleBar>
+        </div>
       </div>
+      
       { !!props.item && (
-        <div className={ `${props.block.background ? 'card-footer' : 'mt-2'}` }>
+        <div className={ `flex-0 ${props.block.background ? 'card-body' : 'd-flex flex-column'}` }>
+          <div className="mb-3">
+            <OverlayTrigger
+              overlay={
+                <Tooltip>
+                  Send Chat
+                </Tooltip>
+              }
+              placement="top"
+            >
+              <Button className="me-2" onClick={ (e) => setTab('chat') } variant={ tab === 'chat' ? 'primary' : 'secondary' }>
+                Chat
+              </Button>
+            </OverlayTrigger>
+            <OverlayTrigger
+              overlay={
+                <Tooltip>
+                  Add Note
+                </Tooltip>
+              }
+              placement="top"
+            >
+              <Button className="me-2" onClick={ (e) => setTab('note') } variant={ tab === 'note' ? 'primary' : 'secondary' }>
+                Note
+              </Button>
+            </OverlayTrigger>
+            <OverlayTrigger
+              overlay={
+                <Tooltip>
+                  Send SMS
+                </Tooltip>
+              }
+              placement="top"
+            >
+              <Button className="me-2" onClick={ (e) => setTab('sms') } variant={ tab === 'sms' ? 'primary' : 'secondary' }>
+                SMS
+              </Button>
+            </OverlayTrigger>
+            <OverlayTrigger
+              overlay={
+                <Tooltip>
+                  { getEmail() ? 'Send Email' : 'Please configure an email connect' }
+                </Tooltip>
+              }
+              placement="top"
+            >
+              <Button className="me-2" disabled={ !getEmail() } onClick={ (e) => setTab('email') } variant={ tab === 'email' ? 'primary' : 'secondary' }>
+                Email
+              </Button>
+            </OverlayTrigger>
+          </div>
           { tab === 'email' && (
-            <button className={ `btn btn-success${loading ? ' disabled' : ''}${getValue('email') ? '' : ' disabled'}` } onClick={ (e) => onEmail(e) }>
-              { loading ? 'Sending...' : 'Send' }
-            </button>
+            <div className="mb-2">
+              <input className="form-control" placeholder="Subject" value={ subject } onChange={ (e) => setSubject(e.target.value) } />
+            </div>
           ) }
-          { tab === 'sms' && (
-            <button className={ `btn btn-success${loading ? ' disabled' : ''}` } onClick={ (e) => onSMS(e) }>
-              { loading ? 'Sending...' : 'Send' }
-            </button>
-          ) }
-          { tab === 'note' && (
-            <button className={ `btn btn-success${loading ? ' disabled' : ''}` } onClick={ (e) => onNote(e) }>
-              { loading ? 'Submitting...' : 'Submit' }
-            </button>
-          ) }
+          <Chat.Input
+            noChat
+            size="lg"
+            onSend={ onSend }
+            { ...props }
+          />
         </div>
       ) }
     </div>

@@ -49,7 +49,7 @@ export default class SMSAction extends Struct {
   get views() {
     // return object of views
     return {
-      config : 'action/sms/config',
+      config : 'action/sms',
     };
   }
 

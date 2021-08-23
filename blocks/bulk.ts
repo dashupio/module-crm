@@ -45,7 +45,7 @@ export default class BulkBlock extends Struct {
   get views() {
     // return object of views
     return {
-      view   : 'block/bulk/view',
+      view   : 'block/bulk',
       config : 'block/bulk/config',
     };
   }

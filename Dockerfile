@@ -1,5 +1,5 @@
 # use node
-FROM node:alpine
+FROM node:lts
 
 # Create app directory
 WORKDIR /usr/src/module
@@ -9,6 +9,7 @@ COPY . /usr/src/module
 
 # Install dependencies
 RUN npm i
+RUN npm rebuild node-sass
 
 # CMD
 CMD ["node", "index"]

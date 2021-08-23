@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 const BulkPage = (props = {}) => {
   // groups
   const [form, setForm] = useState(null);
+  const [selected, setSelected] = useState({ type : 'items', items : [] });
   const [updating, setUpdating] = useState(null);
 
   // required
@@ -27,7 +28,7 @@ const BulkPage = (props = {}) => {
         x : 0,
         y : 1,
         w : 6,
-        h : 24,
+        h : 22,
       },
     },
     {
@@ -60,13 +61,14 @@ const BulkPage = (props = {}) => {
       },
     },
     {
-      uuid : shortid(),
-      type : 'bulk',
+      uuid       : shortid(),
+      type       : 'bulk',
+      background : true,
       _grid : {
         x : 6,
         y : 0,
         w : 6,
-        h : 30
+        h : 28
       },
     },
   ];
@@ -169,6 +171,12 @@ const BulkPage = (props = {}) => {
       onItem={ (item) => setItem(item, true) }
       require={ required }
       onClick={ setItem }
+      selected={ selected }
+      setSelected={ setSelected }
+
+      menu={ ({ updating }) => (
+        <div />
+      ) }
       subMenu={ () => (
         <>
           <Page.Filter onSearch={ setSearch } onTag={ setTag } onSort={ setSort } onFilter={ setFilter } isString />

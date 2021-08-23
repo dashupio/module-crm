@@ -250,8 +250,6 @@ class PhoneModule extends EventEmitter {
     // props
     const { page, dashup } = props;
 
-    console.log(page, props, 'disconnect');
-
     // connection
     const conn = this.connections.get(page.get('_id'));
 
@@ -269,12 +267,17 @@ class PhoneModule extends EventEmitter {
 
     // check event
     if (conn.event) {
-      // duration
-      const duration = (new Date().getTime() - new Date(conn.event.get(`_meta.created_at`)).getTime());
+      // date
+      if (dateField) {
+        // duration
+        const duration = (new Date().getTime() - new Date(conn.event.get(`_meta.created_at`)).getTime());
 
-      // set duration
-      conn.event.set(`${dateField.name || dateField.uuid}.dur.type`, 'until');
-      conn.event.set(`${dateField.name || dateField.uuid}.duration`, duration);
+        // set duration
+        conn.event.set(`${dateField.name || dateField.uuid}.type`, 'until');
+        conn.event.set(`${dateField.name || dateField.uuid}.duration`, duration);
+      }
+
+      // save event
       await conn.event.save();
 
       // check duration
@@ -340,12 +343,60 @@ class PhoneModule extends EventEmitter {
   }
 
   /**
+   * send sms
+   *
+   * @param props 
+   * @param item 
+   * @param body 
+   */
+  async email(props, item, connect, subject, body) {
+    // get fields    
+    const fields = this.getFields(props);
+
+    // get number
+    const emailField = fields.find((f) => f.uuid === props.page.get('data.field.email'));
+
+    // check number
+    if (!emailField) return;
+
+    // get number
+    const email = item.get(`${emailField.name || emailField.uuid}`);
+
+    console.log(emailField, subject, body, email);
+
+    // send from/to
+    await props.dashup.action({
+      type   : 'connect',
+      page   : props.page.get('_id'),
+      form   : props.page.get('data.event.form'),
+      model  : props.page.get('data.event.model'),
+      struct : connect.type,
+    }, 'send', connect, {
+      body,
+      subject,
+
+      to   : email,
+      item : item.get('_id'),
+      user : props.dashup.get('_meta.member'),
+    });
+
+    // add event
+    await this.event(props, {
+      body,
+      item,
+      type  : 'email:outbound',
+      time  : new Date(),
+      title : `Sent Email To ${email}`,
+    });
+  }
+
+  /**
    * set item
    *
    * @param props 
    * @param item 
    */
-  item(props, item) {
+  item(props, item, from = false) {
     // connection
     const conn = this.connections.get(props.page.get('_id'));
 
@@ -355,7 +406,7 @@ class PhoneModule extends EventEmitter {
     this.emit('item', conn.item);
 
     // on item
-    props.onItem(null, item, false);
+    if (!from) props.setItem(item);
   }
 
   /**

@@ -26,32 +26,12 @@ const PhonePage = (props = {}) => {
   const defaultBlocks = [
     {
       uuid  : shortid(),
-      type  : 'card',
-      _grid : {
-        x : 6,
-        y : 0,
-        w : 3,
-        h : 8,
-      },
-    },
-    {
-      uuid  : shortid(),
       type  : 'form',
       _grid : {
-        x : 2,
-        y : 0,
+        h : 28,
         w : 4,
-        h : 30,
-      },
-    },
-    {
-      uuid  : shortid(),
-      type  : 'events',
-      _grid : {
-        x : 6,
-        y : 2,
-        w : 6,
-        h : 22,
+        x : 8,
+        y : 0,
       },
       background : true,
     },
@@ -59,22 +39,22 @@ const PhonePage = (props = {}) => {
       uuid  : shortid(),
       type  : 'contact',
       _grid : {
-        x : 9,
-        y : 0,
-        w : 3,
-        h : 8,
+        h : 28,
+        w : 6,
+        x : 2,
+        y : 0
       },
+      background : true,
     },
     {
       uuid  : shortid(),
       type  : 'list',
       _grid : {
+        h : 28,
+        w : 2,
         x : 0,
         y : 0,
-        w : 2,
-        h : 30,
       },
-      background : true,
     },
   ];
 
@@ -165,6 +145,24 @@ const PhonePage = (props = {}) => {
     if (force) setUpdating(true);
   };
 
+  // add event
+  const addEvent = (data) => {
+    // event
+    return phone.event(props, data);
+  };
+
+  // add sms
+  const sendSMS = (message) => {
+    // sms
+    return phone.sms(props, props.item, message);
+  };
+
+  // add sms
+  const sendEmail = (connect, subject, message) => {
+    // sms
+    return phone.email(props, props.item, connect, subject, message);
+  };
+
   // return jsx
   return (
     <View
@@ -174,11 +172,15 @@ const PhonePage = (props = {}) => {
       form={ form }
       struct="dashboard"
       onItem={ (item) => setItem(item, true) }
+      number={ phone.number }
       require={ required }
       onClick={ setItem }
+      sendSMS={ sendSMS }
+      addEvent={ addEvent }
+      sendEmail={ sendEmail }
 
       menu={ ({ updating }) => (
-        <Menu updating={ updating } phone={ phone } setForm={ setForm } { ...props } />
+        <Menu { ...props } updating={ updating } phone={ phone } setForm={ setForm } setItem={ setItem } />
       ) }
       subMenu={ () => (
         <>

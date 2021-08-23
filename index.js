@@ -7,7 +7,6 @@ const BulkPage = require('./pages/bulk');
 const BulkBlock = require('./blocks/bulk');
 const SMSAction = require('./actions/sms');
 const PhonePage = require('./pages/phone');
-const EventsBlock = require('./blocks/events');
 const ContactBlock = require('./blocks/contact');
 
 /**
@@ -38,7 +37,6 @@ class CRMModule extends Module {
 
     // register blocks
     fn('block', BulkBlock);
-    fn('block', EventsBlock);
     fn('block', ContactBlock);
   }
 
