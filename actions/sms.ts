@@ -40,7 +40,7 @@ export default class SMSAction extends Struct {
    */
   get icon() {
     // return connect icon label
-    return 'fa fa-phone';
+    return 'fad fa-sms';
   }
 
   /**
@@ -76,7 +76,7 @@ export default class SMSAction extends Struct {
    */
   get description() {
     // return description string
-    return 'SMS Action';
+    return 'Send SMS(s)';
   }
 
   /**

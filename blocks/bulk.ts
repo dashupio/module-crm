@@ -20,7 +20,7 @@ export default class BulkBlock extends Struct {
    */
   get icon() {
     // return page type label
-    return 'fa fa-envelope-open-text';
+    return 'fad fa-envelope-open-text';
   }
 
   /**
@@ -28,7 +28,7 @@ export default class BulkBlock extends Struct {
    */
   get title() {
     // return page type label
-    return 'Bulk Contact Block';
+    return 'Marketing';
   }
 
   /**
@@ -63,6 +63,6 @@ export default class BulkBlock extends Struct {
    */
   get description() {
     // return description string
-    return 'Bulk Contact Block';
+    return 'Content for Bulk Marketing';
   }
 }

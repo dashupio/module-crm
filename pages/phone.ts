@@ -44,7 +44,7 @@ export default class PhonePage extends Struct {
    */
   get icon() {
     // return page type label
-    return 'fa fa-phone';
+    return 'fad fa-phone text-info';
   }
 
   /**
@@ -52,7 +52,7 @@ export default class PhonePage extends Struct {
    */
   get title() {
     // return page type label
-    return 'Phone Page';
+    return 'Communication';
   }
 
   /**
@@ -341,7 +341,7 @@ export default class PhonePage extends Struct {
    */
   get categories() {
     // return array of categories
-    return ['Call'];
+    return ['Communication'];
   }
 
   /**
@@ -349,7 +349,7 @@ export default class PhonePage extends Struct {
    */
   get description() {
     // return description string
-    return 'Embeddable phone page';
+    return 'Communicate via Phone, Email, or Messaging';
   }
 
   /**

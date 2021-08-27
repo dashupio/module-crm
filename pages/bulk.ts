@@ -33,7 +33,7 @@ export default class BulkPage extends Struct {
    */
   get icon() {
     // return page type label
-    return 'fa fa-envelope-open-text';
+    return 'fad fa-envelope-open-text text-info';
   }
 
   /**
@@ -41,7 +41,7 @@ export default class BulkPage extends Struct {
    */
   get title() {
     // return page type label
-    return 'Bulk Marketing Page';
+    return 'Marketing';
   }
 
   /**
@@ -96,7 +96,7 @@ export default class BulkPage extends Struct {
    */
   get categories() {
     // return array of categories
-    return ['Call'];
+    return ['Communication'];
   }
 
   /**
@@ -104,7 +104,7 @@ export default class BulkPage extends Struct {
    */
   get description() {
     // return description string
-    return 'Bulk Marketing Page';
+    return 'Send bulk sms or email to targeted groups';
   }
 
   /**

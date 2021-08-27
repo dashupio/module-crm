@@ -20,7 +20,7 @@ export default class ContactBlock extends Struct {
    */
   get icon() {
     // return page type label
-    return 'fa fa-address-book';
+    return 'fad fa-address-book';
   }
 
   /**
@@ -28,7 +28,7 @@ export default class ContactBlock extends Struct {
    */
   get title() {
     // return page type label
-    return 'Contact Block';
+    return 'Communication';
   }
 
   /**
@@ -63,6 +63,6 @@ export default class ContactBlock extends Struct {
    */
   get description() {
     // return description string
-    return 'Send email, sms, or create note for a contact';
+    return 'Customer Communication Block';
   }
 }
