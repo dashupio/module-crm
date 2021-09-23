@@ -1,6 +1,6 @@
 
 // import react
-import { Dropdown } from 'react-bootstrap';
+import { Dropdown } from '@dashup/ui';
 import React, { useState, useEffect } from 'react';
 
 // application page

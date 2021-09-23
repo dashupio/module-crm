@@ -1,10 +1,9 @@
 
 // import react
 import dotProp from 'dot-prop';
-import { Chat } from '@dashup/ui';
 import SimpleBar from 'simplebar-react';
-import { OverlayTrigger, Tooltip, Button } from 'react-bootstrap';
 import React, { useRef, useState, useEffect } from 'react';
+import { Chat, OverlayTrigger, Tooltip, Button } from '@dashup/ui';
 
 // import item
 import Item from './event';

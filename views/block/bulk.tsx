@@ -1,8 +1,7 @@
 
 // react
-import { View, Select } from '@dashup/ui';
-import { Button, Tabs, Tab, Modal } from 'react-bootstrap';
 import React, { useState, useEffect } from 'react';
+import { Button, Tabs, Tab, Modal, View, Select } from '@dashup/ui';
 
 // create block bulk
 const BlockBulk = (props = {}) => {
