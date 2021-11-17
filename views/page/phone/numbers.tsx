@@ -2,7 +2,7 @@
 // import react
 import Dashup from '@dashup/core';
 import countries from 'country-list';
-import { View, Select } from '@dashup/ui';
+import { View, Alert, Select } from '@dashup/ui';
 import React, { useState, useEffect } from 'react';
 
 // create page model config
@@ -143,9 +143,11 @@ const PagePhoneNumbers = (props = {}) => {
       { tab === 'list' && (
         <>
           { !!error && (
-            <div className="alert alert-danger mb-3">
-              Error: { error }
-            </div>
+            <Alert severity="error" sx={ {
+              mb : 2,
+            } }>
+              { `Error: ${error}` }
+            </Alert>
           ) }
           <div className="mb-3">
             <label className="form-label">

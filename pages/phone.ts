@@ -61,7 +61,7 @@ export default class PhonePage extends Struct {
   get data() {
     // return page data
     return {
-      tabs : ['Contacts', 'Events', 'Numbers', 'Forwarding', 'Connects'],
+      tabs : ['Contacts', 'Events', 'Forwarding', 'Connects'],
 
       default : {
         title : 'The Phone page requires an Event and a Contact in order for it to be used, do you want us to create those pages?',

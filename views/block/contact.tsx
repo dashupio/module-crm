@@ -2,8 +2,8 @@
 // import react
 import dotProp from 'dot-prop';
 import SimpleBar from 'simplebar-react';
-import React, { useRef, useState, useEffect } from 'react';
-import { Chat, OverlayTrigger, Tooltip, Button } from '@dashup/ui';
+import React, { useState, useEffect } from 'react';
+import { Tab, Box, Chat, TabContext, TabList, Card, CardHeader, CardContent, CircularProgress, TextField } from '@dashup/ui';
 
 // import item
 import Item from './event';
@@ -197,95 +197,67 @@ const BlockContact = (props = {}) => {
     };
   }, [getModel(), props.item && props.item.get('_id'), skip, limit]);
 
-  // return jsx
+  // tabs
+  const tabs = ['Chat', 'Note', 'SMS', 'Email'];
+
+  // card
   return (
-    <div className={ `flex-1 d-flex flex-column h-100 w-100${props.block.background ? ' card' : ''}` }>
-      { !!props.item && getValue('name') && (
-        <div className={ props.block.background ? 'card-header' : ' mb-2' }>
-          <b>{ getValue('name') }</b>
-        </div>
-      ) }
-      
-      <div className="flex-1 fit-content">
-        <div className="h-100">
-          <SimpleBar className={ `p-relative h-100${props.block.background ? ' card-body' : ''}` }>
-            { loading ? (
-              <div className="text-center">
-                <i className="fa fa-spinner fa-spin" />
-              </div>
-            ) : (items || []).map((item, i) => {
-              // return jsx
-              return (
-                <Item
-                  { ...getProps() }
-                  key={ `event-${item.get('_id')}` }
-                  prev={ items[i - 1] }
-                  next={ items[i + 1] }
-                  event={ item }
-                  model={ getModel() }
-                />
-              );
-            }) }
-          </SimpleBar>
-        </div>
-      </div>
-      
+    <Card sx={ {
+      width         : '100%',
+      height        : '100%',
+      display       : 'flex',
+      flexDirection : 'column',
+    } }>
       { !!props.item && (
-        <div className={ `flex-0 ${props.block.background ? 'card-body' : 'd-flex flex-column'}` }>
-          <div className="mb-3">
-            <OverlayTrigger
-              overlay={
-                <Tooltip>
-                  Send Chat
-                </Tooltip>
-              }
-              placement="top"
-            >
-              <Button className="me-2" onClick={ (e) => setTab('chat') } variant={ tab === 'chat' ? 'primary' : 'secondary' }>
-                Chat
-              </Button>
-            </OverlayTrigger>
-            <OverlayTrigger
-              overlay={
-                <Tooltip>
-                  Add Note
-                </Tooltip>
-              }
-              placement="top"
-            >
-              <Button className="me-2" onClick={ (e) => setTab('note') } variant={ tab === 'note' ? 'primary' : 'secondary' }>
-                Note
-              </Button>
-            </OverlayTrigger>
-            <OverlayTrigger
-              overlay={
-                <Tooltip>
-                  Send SMS
-                </Tooltip>
-              }
-              placement="top"
-            >
-              <Button className="me-2" onClick={ (e) => setTab('sms') } variant={ tab === 'sms' ? 'primary' : 'secondary' }>
-                SMS
-              </Button>
-            </OverlayTrigger>
-            <OverlayTrigger
-              overlay={
-                <Tooltip>
-                  { getEmail() ? 'Send Email' : 'Please configure an email connect' }
-                </Tooltip>
-              }
-              placement="top"
-            >
-              <Button className="me-2" disabled={ !getEmail() } onClick={ (e) => setTab('email') } variant={ tab === 'email' ? 'primary' : 'secondary' }>
-                Email
-              </Button>
-            </OverlayTrigger>
-          </div>
+        <CardHeader
+          title={ getValue('name') }
+        />
+      ) }
+      <CardContent sx={ {
+        flex : 1,
+      } }>
+        <SimpleBar style={ {
+          height : '100%',
+        } }>
+          { loading ? (
+            <Box flex={ 1 } alignItems="center" justifyContent="center">
+              <CircularProgress />
+            </Box>
+          ) : (items || []).map((item, i) => {
+            // return jsx
+            return (
+              <Item
+                key={ `event-${item.get('_id')}` }
+                prev={ items[i - 1] }
+                next={ items[i + 1] }
+                event={ item }
+                model={ getModel() }
+                { ...getProps() }
+              />
+            );
+          }) }
+        </SimpleBar>
+      </CardContent>
+      { !!props.item && (
+        <CardContent sx={ {
+          flex : 0,
+        } }>
+          <TabContext value={ tab }>
+            <Box sx={ { borderBottom : 1, borderColor : 'divider', mb : 2 } }>
+              <TabList onChange={ (e, v) => setTab(v.toLowerCase()) }>
+                { tabs.map((t, i) => {
+                  // return jsx
+                  return <Tab key={ `tab-${t}` } value={ t.toLowerCase() } label={ t } />;
+                }) }
+              </TabList>
+            </Box>
+          </TabContext>
           { tab === 'email' && (
-            <div className="mb-2">
-              <input className="form-control" placeholder="Subject" value={ subject } onChange={ (e) => setSubject(e.target.value) } />
-            </div>
+            <TextField
+              label="Subject"
+              value={ subject }
+              onChange={ (e) => setSubject(e.target.value) }
+            />
           ) }
           <Chat.Input
             noChat
@@ -293,9 +265,10 @@ const BlockContact = (props = {}) => {
             onSend={ onSend }
             { ...props }
           />
-        </div>
+        </CardContent>
       ) }
-    </div>
+      <Box />
+    </Card>
   );
 }
 

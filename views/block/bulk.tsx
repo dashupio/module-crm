@@ -1,7 +1,7 @@
 
 // react
 import React, { useState, useEffect } from 'react';
-import { Button, Tabs, Tab, Modal, View, Select } from '@dashup/ui';
+import { Box, Card, CardActions, LoadingButton, TabContext, TabList, TextField, MenuItem, CardHeader, CardContent, Button, Tab, Modal, View, Select } from '@dashup/ui';
 
 // create block bulk
 const BlockBulk = (props = {}) => {
@@ -145,6 +145,112 @@ const BlockBulk = (props = {}) => {
     loadNumbers();
   }, []);
 
+  // tabs
+  const tabs = ['Email', 'SMS'];
+
+  // card
+  return (
+    <>
+      <Card sx={ {
+        width         : '100%',
+        height        : '100%',
+        display       : 'flex',
+        flexDirection : 'column',
+      } }>
+        { !!props.block.name && (
+          <CardHeader
+            title={ props.block.name }
+          />
+        ) }
+        <CardContent sx={ {
+          flex : 1,
+        } }>
+          <TabContext value={ tab }>
+            <Box sx={ { borderBottom : 1, borderColor : 'divider', mb : 2 } }>
+              <TabList onChange={ (e, v) => setTab(v.toLowerCase()) }>
+                { tabs.map((t, i) => {
+                  // return jsx
+                  return <Tab key={ `tab-${t}` } value={ t.toLowerCase() } label={ t } />;
+                }) }
+              </TabList>
+            </Box>
+          </TabContext>
+          { !!getEmail().length && tab === 'email'  && (
+            <TextField
+              select
+              label="Email From"
+              value={ email }
+              onChange={ (e) => setEmail(e.target.value) }
+              fullWidth
+            >
+              { getEmail().map((item) => {
+                return (
+                  <MenuItem key={ item.value } value={ item.value }>
+                    { item.label }
+                  </MenuItem>
+                );
+              }) }
+            </TextField>
+          ) }
+          { tab === 'email' && (
+            <TextField
+              label="Subject"
+              value={ subject }
+              onChange={ (e) => setSubject(e.target.value) }
+              fullWidth
+            />
+          ) }
+          { !!getNumber().length && tab === 'sms' && (
+            <TextField
+              select
+              label="SMS Number"
+              value={ number }
+              onChange={ (e) => setNumber(e.target.value) }
+              fullWidth
+            >
+              { getNumber().map((item) => {
+                return (
+                  <MenuItem key={ item.value } value={ item.value }>
+                    { item.label }
+                  </MenuItem>
+                );
+              }) }
+            </TextField>
+          ) }
+          { tab === 'email' && (
+            <View
+              type="field"
+              view="input"
+              struct="wysiwyg"
+
+              field={ {
+                label : 'Body',
+              } }
+              value={ body }
+              dashup={ props.dashup }
+              onChange={ (f, value) => setBody(value) }
+            />
+          ) }
+          { tab === 'sms' && (
+            <TextField
+              label="SMS Body"
+              value={ message }
+              onChange={ (e) => setMessage(e.target.value) }
+              fullWidth
+            />
+          ) }
+        </CardContent>
+        <CardActions sx={ {
+          justifyContent : 'end',
+        } }>
+          <LoadingButton color="success" variant="contained" disabled={ !!(loading || !props.selected?.total || (!body.length && !message.length)) } loading={ !!loading } onClick={ (e) => setModal(true) }>
+            { loading ? 'Sending...' : 'Send' } { props.selected?.total ? props.selected.total.toLocaleString() : '' }
+          </LoadingButton>
+        </CardActions>
+      </Card>
+    </>
+  );
+
   // return jsx
   return (
     <>
@@ -163,49 +269,7 @@ const BlockBulk = (props = {}) => {
             >
             { !props.block.noEmail && (
               <Tab eventKey="email" title="Email" disabled={ !getEmail() }>
-                { !!getEmail().length && (
-                  <div className="mb-3">
-                    <label className="form-label">
-                      Email From
-                    </label>
-                    <Select options={ getEmail() } defaultValue={ getEmail().filter((e) => e.selected) } onChange={ (v) => setEmail(v?.value) } />
-                  </div>
-                ) }
-                <div className="mb-3">
-                  <label className="form-label">
-                    Subject
-                  </label>
-                  <input className="form-control" placeholder="Subject" value={ subject } onChange={ (e) => setSubject(e.target.value) } />
-                </div>
-                <div className="">
-                  <label className="form-label d-flex align-items-center">
-                    Body
-                    <button className="btn btn-sm btn-primary ms-auto" onClick={ (e) => setCode(!code) }>
-                      { code ? 'Use WYSIWYG' : 'Use HTML' }
-                    </button>
-                  </label>
-                  { code ? (
-                    <View
-                      type="field"
-                      view="code"
-                      mode="handlebars"
-                      struct="code"
-                      value={ body }
-                      dashup={ props.dashup }
-                      onChange={ (v) => setBody(v) }
-                      />
-                  ) : (
-                    <View
-                      type="page"
-                      view="wysiwyg"
-                      struct="form"
-
-                      value={ body }
-                      dashup={ props.dashup }
-                      onChange={ (v) => setBody(v) }
-                    />
-                  ) }
-                </div>
+                
               </Tab>
             ) }
             

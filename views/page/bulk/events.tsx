@@ -1,7 +1,7 @@
 
 // import react
 import React from 'react';
-import { Select } from '@dashup/ui';
+import { Box, Divider, TextField, MenuItem } from '@dashup/ui';
 
 // create page model config
 const PageBulkEvents = (props = {}) => {
@@ -135,62 +135,67 @@ const PageBulkEvents = (props = {}) => {
       };
     }).filter((f) => f);
   };
-
-  // on forms
-  const onModel = (value) => {
-    // set data
-    props.setData('event.model', value?.value);
-  };
-
-  // on forms
-  const onField = (tld, value) => {
-    // set data
-    props.setData(tld, value || null);
-  };
-
-  // on forms
-  const onForm = (value) => {
-    // set data
-    props.setData('event.form', value?.value);
-  };
   
   // return jsx
   return (
     <>
-      <div className="mb-3">
-        <label className="form-label">
-          Event Model
-        </label>
-        <Select options={ getModels() } defaultValue={ getModels().filter((f) => f.selected) } onChange={ onModel } isClearable />
-      </div>
+      <TextField
+        label="Event Model"
+        value={ props.page.get('data.event.model') || '' }
+        select
+        onChange={ (e) => props.setData('event.model', e.target.value) }
+        fullWidth
+      >
+        { getModels().map((option) => (
+          <MenuItem key={ option.value } value={ option.value }>
+            { option.label }
+          </MenuItem>
+        )) }
+      </TextField>
       
       { !!props.page.get('data.event.model') && (
-        <div className="mb-3">
-          <label className="form-label">
-          Event Form(s)
-          </label>
-          <Select options={ getForm() } defaultValue={ getForm().filter((f) => f.selected) } onChange={ onForm } />
-        </div>
+        <TextField
+          label="Event Form(s)"
+          value={ Array.isArray(props.page.get('data.event.form')) ? props.page.get('data.event.form') : [props.page.get('data.event.form')].filter((f) => f) }
+          select
+          onChange={ (e) => props.setData('event.form', e.target.value) }
+          fullWidth
+          SelectProps={ {
+            multiple : true,
+          } }
+        >
+          { getForm().map((option) => (
+            <MenuItem key={ option.value } value={ option.value }>
+              { option.label }
+            </MenuItem>
+          )) }
+        </TextField>
       ) }
 
       { !!props.page.get('data.event.model') && !!props.page.get('data.event.form') && (
         <>
-          <hr />
+          <Box my={ 2 }>
+            <Divider />
+          </Box>
           
           { fields.map((field, i) => {
             // return jsx
             return (
-              <div className="mb-3" key={ `event-${field.name}` }>
-                <label className="form-label">
-                  { field.label } Field
-                </label>
-                <Select options={ getField(`event.${field.name}`, [field.type]) } defaultValue={ getField(`event.${field.name}`, [field.type]).filter((f) => f.selected) } onChange={ (value) => onField(`event.${field.name}`, value?.value) } />
-                { !!field.help && (
-                  <small className="form-help">
-                    { field.help }
-                  </small>
-                ) }
-              </div>
+              <TextField
+                key={ `field-${field.name}` }
+                label={ `${field.label} Field` }
+                value={ props.page.get(`data.event.${field.name}`) || '' }
+                select
+                onChange={ (e) => props.setData(`event.${field.name}`, e.target.value) }
+                fullWidth
+                helpText={ field.help }
+              >
+                { getField(`event.${field.name}`, [field.type]).map((option) => (
+                  <MenuItem key={ option.value } value={ option.value }>
+                    { option.label }
+                  </MenuItem>
+                )) }
+              </TextField>
             )
           }) }
         </>

@@ -1,11 +1,12 @@
 
 // import react
-import { Dropdown } from '@dashup/ui';
-import React, { useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
+import { Box, Menu, Stack, MenuItem, Button, Icon, IconButton, ButtonGroup, Tooltip } from '@dashup/ui';
 
 // application page
 const PhonePageMenu = (props = { numbers : [] }) => {
   // numbers
+  const [open, setOpen] = useState(false);
   const [numbers, setNumbers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [updated, setUpdated] = useState(new Date());
@@ -14,13 +15,16 @@ const PhonePageMenu = (props = { numbers : [] }) => {
   // break out props
   const { phone } = props;
 
+  // refs
+  const menuRef = useRef(null);
+
   // variables
   const status = {
     'busy'       : 'warning',
     'open'       : 'success',
     'ready'      : 'success',
     'closed'     : 'light',
-    'offline'    : 'danger',
+    'offline'    : 'error',
     'pending'    : 'info',
     'ringing'    : 'primary',
     'connecting' : 'info',
@@ -237,191 +241,185 @@ const PhonePageMenu = (props = { numbers : [] }) => {
   }, [props.item && props.item.get()]);
 
   // return jsx
-  return props.updating ? <div /> : (
+  return props.updating ? <Box /> : (
     <>
-      { !!(connection?.number && !connection?.call) && (
-        <button className="btn btn-link me-2">
-          { connection.number }
-        </button>
-      ) }
+      <Stack direction="row" spacing={ 1 } alignItems="center">
+        { !!(connection?.number && !connection?.call) && (
+          <Button onClick={ (e) => numbers && numbers.length > 1 && setOpen(true) } ref={ menuRef }>
+            { connection.number }
+          </Button>
+        ) }
 
-      { /* SELECT NUMBER */ }
-      { !!(numbers && numbers.length > 1 && !connection?.call) && (
-        <Dropdown className="d-inline-block me-2">
-          <Dropdown.Toggle variant={ connection && connection.number ? 'light' : 'info' }>
-            { connection && connection.number || 'Select Number' }
-          </Dropdown.Toggle>
-          <Dropdown.Menu>
-            { numbers.map((item, i) => {
-              // return value
-              return (
-                <Dropdown.Item key={ `number-${item.number.number}` } onClick={ (e) => onNumber(e, item.number) }>
-                  { item.number.number }
-                </Dropdown.Item>
-              );
-            }) }
-          </Dropdown.Menu>
-        </Dropdown>
-      ) }
+        { /* SELECT NUMBER */ }
+        { !!(numbers && numbers.length > 1 && !connection.number && !connection?.call) && (
+          <Button variant="contained" onClick={ (e) => setOpen(true) } ref={ menuRef } color="info">
+            { 'Select Number' }
+          </Button>
+        ) }
 
-      { /* CONNECTION STATUS */ }
-      { !!connection && (
-        connection.call ? (
+        { /* CONNECTION STATUS */ }
+        { !!connection?.call && (
+          <Button>
+            { new Date((new Date().getTime() - connection.call.start.getTime())).toISOString().substr(11, 8) }
+          </Button>
+        ) }
+        { !!connection && (
+          <Tooltip title={ ucFirst(connection.status || 'connecting') }>
+            <IconButton color={ status[connection.status || 'connecting'] } variant="contained">
+              <Icon type="fas" icon="plug" />
+            </IconButton>
+          </Tooltip>
+        ) }
+
+        { /* INCOMING CALL */ }
+        { !!(connection && connection.call && connection.call.type === 'inbound' && !connection.call.answered) && (
           <>
-            <button className="btn btn-link me-2" data-toggle="tooltip" title="Call Time">
-              { new Date((new Date().getTime() - connection.call.start.getTime())).toISOString().substr(11, 8) }
-            </button>
-            <div className="btn-group me-1" data-toggle="tooltip" title="Call Status">
-              <button className={ `btn btn-${status[connection.call.status || 'connecting']}` }>
-                { ucFirst(connection.call.status) }
-              </button>
-            </div>
+            <Tooltip title="Accept Call">
+              <IconButton onClick={ (e) => onAccept(e) } color="success">
+                <Icon type="fas" icon="phone" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Reject Call">
+              <IconButton onClick={ (e) => onReject(e) } color="error">
+                <Icon type="fas" icon="times" />
+              </IconButton>
+            </Tooltip>
           </>
-        ) : (
-          <button className={ `btn me-2 btn-${status[connection.status || 'connecting']}` } data-toggle="tooltip" title="Connection Status">
-            <i className="fat fa-plug me-2" />
-            { ucFirst(connection.status || 'connecting') }
-          </button>
-        )
-      ) }
+        ) }
 
-      { /* INCOMING CALL */ }
-      { !!(connection && connection.call && connection.call.type === 'inbound' && !connection.call.answered) && (
-        <div className="btn-group me-1">
-          <button className="btn btn-success" onClick={ (e) => onAccept(e) } data-toggle="tooltip" title="Accept Incoming Call">
-            <i className={ `fa fa-phone me-2` } />
-            Accept
-          </button>
-          <button className="btn btn-danger me-2" onClick={ (e) => onReject(e) } data-toggle="tooltip" title="Reject Incoming Call">
-            <i className={ `fa fa-times me-2` } />
-            Reject
-          </button>
-        </div>
-      ) }
+        { /* CURRENT ACTIVE CALL */ }
+        { !!(connection && connection.call && (connection.call.type !== 'inbound' || connection.call.answered)) && (
+          <>
+            <Tooltip title="Mute Call">
+              <IconButton color={ connection.call.muted ? 'error' : 'success' } onClick={ (e) => onMute(e) }>
+                <Icon type="fas" icon={ connection.call.muted ? 'volume-mute' : 'volume' } />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="End Call">
+              <IconButton color="danger" onClick={ (e) => onEnd(e) }>
+                <Icon type="fas" icon="times" />
+              </IconButton>
+            </Tooltip>
+          </>
+        ) }
 
-      { /* CURRENT ACTIVE CALL */ }
-      { !!(connection && connection.call && (connection.call.type !== 'inbound' || connection.call.answered)) && (
-        <div className="btn-group me-1">
-          <button className={ `btn btn-${connection.call.muted ? 'danger' : 'success'}` } onClick={ (e) => onMute(e) } data-toggle="tooltip" title="Mute Call">
-            <i className={ `fat fa-${connection.call.muted ? 'volume-mute' : 'volume'}` } />
-          </button>
-          <button className="btn btn-danger" onClick={ (e) => onEnd(e) } data-toggle="tooltip" title="End Call">
-            <i className={ `fat fa-times` } />
-          </button>
-        </div>
-      ) }
+        { /* START ACTIVE CALL */ }
+        { !!(connection && connection.item && !connection.call) && (
+          <Tooltip title="Start Call">
+            <IconButton className="btn btn-primary" onClick={ (e) => onCall(e) }>
+              <Icon type="fas" icon="phone" />
+            </IconButton>
+          </Tooltip>
+        ) }
 
-      { /* START ACTIVE CALL */ }
-      { !!(connection && connection.item && !connection.call) && (
-        <div className="btn-group me-2">
-          <button className="btn btn-primary" onClick={ (e) => onCall(e) } data-toggle="tooltip" title="Start Call">
-            <i className={ `fat fa-phone` } />
-          </button>
-        </div>
-      ) }
+        { /* DIALLER */ }
+        { !!connection && (
+          <ButtonGroup>
+            { connection.dialler ? (
+              <Button variant="contained" color="primary">
+                { ucFirst(connection.dialler.status) } - 
+                { connection.dialler.dialled?.length || 0 } of { connection.count }
+              </Button>
+            ) : (
+              <Tooltip title="Start Dialler">
+                <IconButton onClick={ (e) => onDialler(e) }>
+                  <Icon type="fas" icon="play" />
+                </IconButton>
+              </Tooltip>
+            ) }
+            { connection.dialler?.status === 'dialling' && (
+              <>
+                <Tooltip title="Next Call">
+                  <IconButton onClick={ (e) => onNext(e) }>
+                    <Icon type="fas" icon="forward" />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Pause Dialler">
+                  <IconButton onClick={ (e) => onPause(e) }>
+                    <Icon type="fas" icon="pause" />
+                  </IconButton>
+                </Tooltip>
+              </>
+            ) }
+            { connection.dialler?.status === 'paused' && (
+              <>
+                <Tooltip title="Start Dialler">
+                  <IconButton onClick={ (e) => onPlay(e) }>
+                    <Icon type="fas" icon="play" />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="End Dialler">
+                  <IconButton onClick={ (e) => onFinish(e) }>
+                    <Icon type="fas" icon="times" />
+                  </IconButton>
+                </Tooltip>
+              </>
+            ) }
+            { connection.dialler?.status === 'finished' && (
+              <Tooltip title="End Dialler">
+                <IconButton onClick={ (e) => onFinish(e) }>
+                  <Icon type="fas" icon="times" />
+                </IconButton>
+              </Tooltip>
+            ) }
+          </ButtonGroup>
+        ) }
 
-      { /* DIALLER */ }
-      { !!connection && (
-        <div className="btn-group me-2">
-          { connection.dialler ? (
-            <button className="btn btn-primary" data-toggle="tooltip" title="Dialler Status">
-              { ucFirst(connection.dialler.status) } - 
-              { connection.dialler.dialled?.length || 0 } of { connection.count }
-            </button>
-          ) : (
-            <button className="btn btn-primary" onClick={ (e) => onDialler(e) } data-toggle="tooltip" title="Start Dialler">
-              <i className="fat fa-play me-2" />
-              Dialler
-            </button>
-          ) }
-          { connection.dialler?.status === 'dialling' && (
-            <>
-              <button className="btn btn-info" onClick={ (e) => onNext(e) } data-toggle="tooltip" title="Next Call">
-                <i className="fa fa-forward" />
-              </button>
-              <button className="btn btn-danger" onClick={ (e) => onPause(e) } data-toggle="tooltip" title="Pause Dialler">
-                <i className="fa fa-pause" />
-              </button>
-            </>
-          ) }
-          { connection.dialler?.status === 'paused' && (
-            <>
-              <button className="btn btn-success" onClick={ (e) => onPlay(e) } data-toggle="tooltip" title="Start Dialler">
-                <i className="fa fa-play" />
-              </button>
-              <button className="btn btn-danger" onClick={ (e) => onFinish(e) } data-toggle="tooltip" title="End Dialler">
-                <i className="fa fa-times" />
-              </button>
-            </>
-          ) }
-          { connection.dialler?.status === 'finished' && (
-            <button className="btn btn-danger" onClick={ (e) => onFinish(e) } data-toggle="tooltip" title="End Dialler">
-              <i className="fa fa-times" />
-            </button>
-          ) }
-        </div>
-      ) }
-
-      { props.dashup.can(props.page, 'submit') && !!props.getForms().length && (
-        props.getForms().length > 1 ? (
-          <Dropdown>
-            <Dropdown.Toggle variant="primary" id="dropdown-create" className="me-2">
-              <i className="fat fa-plus me-2" />
-              Create
-            </Dropdown.Toggle>
-
-            <Dropdown.Menu>
-              { props.getForms().map((form) => {
-
-                // return jsx
-                return (
-                  <Dropdown.Item key={ `create-${form.get('_id')}` } onClick={ (e) => !props.setForm(form.get('_id')) && props.setItem(new props.dashup.Model({}, props.dashup), true) }>
-                    <i className={ `me-2 fa-${form.get('icon') || 'pencil fas'}` } />
-                    { form.get('name') }
-                  </Dropdown.Item>
-                );
-              }) }
-            </Dropdown.Menu>
-          </Dropdown>
-        ) : (
-          <button className="btn btn-primary me-2" onClick={ (e) => !props.setForm(props.getForms()[0].get('_id')) && props.setItem(new props.dashup.Model({}, props.dashup), true) }>
-            <i className={ `me-2 fa-${props.getForms()[0].get('icon') || 'pencil fas'}` } />
+        { props.dashup.can(props.page, 'submit') && !!props.getForms().length && (
+          <Button variant="contained" color="primary" onClick={ (e) => props.setItem(new props.dashup.Model({}, props.dashup), true) } startIcon={ (
+            <Icon icon={ props.getForms()[0].get('icon') || 'plus' } />
+          ) }>
             { props.getForms()[0].get('name') }
-          </button>
-        )
-      ) }
-      
-      { !!(connection && connection.call) && (
-        <div className="dropdown d-inline-block" data-toggle="tooltip" title="Show Keypad">
-          <button className="btn btn-light" data-toggle="dropdown">
-            <i className="fat fa-phone-office" />
-          </button>
-          <div className="dropdown-menu dropdown-menu-right">
-            <div className="card card-sm card-tags m-0">
-              <div className="card-body">
-                <div className="row g-0">
-                  { buttons.map((btn, i) => {
-                    // return jsx
-                    return (
-                      <div key={ `call-${btn.btn}` } className="col-4 d-flex" onClick={ (e) => onPress(e, btn.btn) }>
-                        <button className="btn px-0 w-100 btn-lg btn-light">
-                          <div className="h1">
-                            { btn.btn }
-                          </div>
-                          <small className="d-block">
-                            { btn.sub || ' ' }
-                          </small>
-                        </button>
-                      </div>
-                    );
-                  }) }
+          </Button>
+        ) }
+        
+        { !!(connection && connection.call) && (
+          <div className="dropdown d-inline-block" data-toggle="tooltip" title="Show Keypad">
+            <button className="btn btn-light" data-toggle="dropdown">
+              <i className="fat fa-phone-office" />
+            </button>
+            <div className="dropdown-menu dropdown-menu-right">
+              <div className="card card-sm card-tags m-0">
+                <div className="card-body">
+                  <div className="row g-0">
+                    { buttons.map((btn, i) => {
+                      // return jsx
+                      return (
+                        <div key={ `call-${btn.btn}` } className="col-4 d-flex" onClick={ (e) => onPress(e, btn.btn) }>
+                          <button className="btn px-0 w-100 btn-lg btn-light">
+                            <div className="h1">
+                              { btn.btn }
+                            </div>
+                            <small className="d-block">
+                              { btn.sub || ' ' }
+                            </small>
+                          </button>
+                        </div>
+                      );
+                    }) }
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      ) }
-      
+        ) }
+        
+      </Stack>
+    
+      <Menu
+        open={ !!open }
+        onClose={ () => setOpen(false) }
+        anchorEl={ menuRef?.current }
+      >
+        { numbers.map((item, i) => {
+          // return value
+          return (
+            <MenuItem key={ `number-${item.number.number}` } onClick={ (e) => !setOpen(false) && onNumber(e, item.number) }>
+              { item.number.number }
+            </MenuItem>
+          );
+        }) }
+      </Menu>
     </>
   );
 };

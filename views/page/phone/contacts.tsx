@@ -1,7 +1,7 @@
 
 // import react
 import React from 'react';
-import { View, Query, Select } from '@dashup/ui';
+import { Query, TextField, MenuItem, Divider, Box } from '@dashup/ui';
 
 // create page model config
 const PagePhoneContacts = (props = {}) => {
@@ -102,123 +102,134 @@ const PagePhoneContacts = (props = {}) => {
     }).filter((f) => f);
   };
 
-  // on forms
-  const onModel = (value) => {
-    // set data
-    props.setData('model', value?.value);
-  };
-
-  // on forms
-  const onField = (tld, value) => {
-    // set data
-    props.setData(tld, value || null);
-  };
-
-  // on forms
-  const onForms = (value) => {
-    // set data
-    props.setData('forms', value.map((v) => v.value));
-  };
-
-  // on forms
-  const onModal = (value) => {
-    // set data
-    props.setData('modal', value?.value);
-  };
-
   // return jsx
   return (
     <>
-      <div className="mb-3">
-        <label className="form-label">
-          Contact Model
-        </label>
-        <Select options={ getModels() } defaultValue={ getModels().filter((f) => f.selected) } onChange={ onModel } isClearable />
-      </div>
+      <TextField
+        label="Contact Model"
+        value={ props.page.get('data.model') || '' }
+        select
+        onChange={ (e) => props.setData('model', e.target.value) }
+        fullWidth
+      >
+        { getModels().map((option) => (
+          <MenuItem key={ option.value } value={ option.value }>
+            { option.label }
+          </MenuItem>
+        )) }
+      </TextField>
       
       { !!props.page.get('data.model') && (
         <>
-          <div className="mb-3">
-            <label className="form-label">
-              Contact Form(s)
-            </label>
-            <Select options={ getForms() } defaultValue={ getForms().filter((f) => f.selected) } onChange={ onForms } isMulti />
-          </div>
-          <div className="mb-3">
-            <label className="form-label">
-              End Call Form
-            </label>
-            <Select options={ getModals() } defaultValue={ getModals().filter((f) => f.selected) } onChange={ onModal } />
-            <small className="form-help">
-              Form to display at the end of a call.
-            </small>
-          </div>
+          <TextField
+            label="Contact Form(s)"
+            value={ Array.isArray(props.page.get('data.form')) ? props.page.get('data.form') : [props.page.get('data.form')].filter((f) => f) }
+            select
+            onChange={ (e) => props.setData('form', e.target.value) }
+            fullWidth
+            SelectProps={ {
+              multiple : true,
+            } }
+          >
+            { getForms().map((option) => (
+              <MenuItem key={ option.value } value={ option.value }>
+                { option.label }
+              </MenuItem>
+            )) }
+          </TextField>
+          <TextField
+            label="End Call Form"
+            value={ props.page.get('data.modal') || '' }
+            select
+            onChange={ (e) => props.setData('modal', e.target.value) }
+            fullWidth
+          >
+            { getModals().map((option) => (
+              <MenuItem key={ option.value } value={ option.value }>
+                { option.label }
+              </MenuItem>
+            )) }
+          </TextField>
         </>
-      ) }
-
-      { !!props.page.get('data.model') && (
-        <div className="mb-3">
-          <label className="form-label">
-            Grid Form(s)
-          </label>
-          <small>
-            The forms that this grid will filter by.
-          </small>
-        </div>
       ) }
 
       { !!props.page.get('data.model') && props.getFields && !!props.getFields().length && (
         <>
-          <hr />
+          <Box my={ 2 }>
+            <Divider />
+          </Box>
           
           { fields.map((field, i) => {
             // return jsx
             return (
-              <div className="mb-3" key={ `field-${field.name}` }>
-                <label className="form-label">
-                  { field.label } Field
-                </label>
-                <Select options={ getField(`field.${field.name}`, [field.type]) } defaultValue={ getField(`field.${field.name}`, [field.type]).filter((f) => f.selected) } onChange={ (value) => onField(`field.${field.name}`, value?.value) } />
-              </div>
+              <TextField
+                key={ `field-${field.name}` }
+                label={ `${field.label} Field` }
+                value={ props.page.get(`data.field.${field.name}`) || '' }
+                select
+                onChange={ (e) => props.setData(`field.${field.name}`, e.target.value) }
+                fullWidth
+              >
+                { getField(`field.${field.name}`, [field.type]).map((option) => (
+                  <MenuItem key={ option.value } value={ option.value }>
+                    { option.label }
+                  </MenuItem>
+                )) }
+              </TextField>
             )
           }) }
           
-            
-          <div className="mb-3">
-            <label className="form-label">
-              Tag Field(s)
-            </label>
-            <Select options={ getField('tag', ['select', 'checkbox']) } defaultValue={ getField('tag', ['select', 'checkbox']).filter((f) => f.selected) } onChange={ (value) => onField('tag', value.map((v) => v.value)) } isMulti />
-            <small className="form-help">
-              Selecting a tag field will allow you to tag tasks.
-            </small>
-          </div>
-            
-          <div className="mb-3">
-            <label className="form-label">
-              User Field(s)
-            </label>
-            <Select options={ getField('user', ['user']) } defaultValue={ getField('user', ['user']).filter((f) => f.selected) } onChange={ (value) => onField('user', value.map((v) => v.value)) } isMulti />
-            <small className="form-help">
-              Selecting a user field will allow you to assign tasks to that user.
-            </small>
-          </div>
-            
-          <div className="mb-3">
-            <label className="form-label">
-              Filter By
-            </label>
-            <Query
-              isString
+          <TextField
+            label="Tag Field(s)"
+            value={ Array.isArray(props.page.get('data.tag')) ? props.page.get('data.tag') : [props.page.get('data.tag')].filter((f) => f) }
+            select
+            onChange={ (e) => props.setData('tag', e.target.value) }
+            fullWidth
+            helperText="Selecting a tag field will allow you to tag tasks."
+            SelectProps={ {
+              multiple : true,
+            } }
+          >
+            { getField('tag', ['select', 'checkbox']).map((option) => (
+              <MenuItem key={ option.value } value={ option.value }>
+                { option.label }
+              </MenuItem>
+            )) }
+          </TextField>
+          
+          <TextField
+            label="User Field(s)"
+            value={ Array.isArray(props.page.get('data.user')) ? props.page.get('data.user') : [props.page.get('data.user')].filter((f) => f) }
+            select
+            onChange={ (e) => props.setData('user', e.target.value) }
+            fullWidth
+            helperText="Selecting a user field will allow you to assign tasks to that user."
+            SelectProps={ {
+              multiple : true,
+            } }
+          >
+            { getField('user', ['user']).map((option) => (
+              <MenuItem key={ option.value } value={ option.value }>
+                { option.label }
+              </MenuItem>
+            )) }
+          </TextField>
 
-              page={ props.page }
-              query={ props.page.get('data.filter') }
-              dashup={ props.dashup }
-              fields={ props.getFields() }
-              onChange={ (val) => props.setData('filter', val) }
-              getFieldStruct={ props.getFieldStruct }
-              />
-          </div>
+          <Box my={ 2 }>
+            <Divider />
+          </Box>
+            
+          <Query
+            isString
+
+            page={ props.page }
+            label="Filter By"
+            query={ props.page.get('data.filter') }
+            dashup={ props.dashup }
+            fields={ props.getFields() }
+            onChange={ (val) => props.setData('filter', val) }
+            getFieldStruct={ props.getFieldStruct }
+          />
         </>
       ) }
     </>
